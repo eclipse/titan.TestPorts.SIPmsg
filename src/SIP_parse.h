@@ -17,7 +17,7 @@
 *   Szalai Zsolt
 ******************************************************************************/
 //  File:               SIP_parse.h
-//  Rev:                R12D
+//  Rev:                R14A
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244

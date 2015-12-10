@@ -20,7 +20,7 @@
 ******************************************************************************/
 //
 //  File:               SIP_parse.y
-//  Rev:                R12D
+//  Rev:                R14A
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -59,6 +59,7 @@ extern int SIP_parse_lex_destroy();
 RequestLine *rqlineptr;
 StatusLine *stlineptr;
 MessageHeader *headerptr;
+PDU__SIP *msgptr;
 int wildcarded_enabled_parser;
 
 // header part pointers
@@ -310,6 +311,7 @@ extern char * stream_buffer; // EPTEBAL
 %token INFOPACKAGELWSCOLON
 %token FEATURECAPSLWSCOLON
 %token RECVINFOLWSCOLON
+%token PLASTACCESSNETLWSCOLON
 %token <sv> _TOKEN_NO_DOT _HEXTOKEN
 %token <cv> _DOT
 %token <cv> _SLASH
@@ -438,7 +440,7 @@ Content_Disposition:
         headerptr->contentDisposition()().dispositionParams()=OMIT_VALUE;
         /*Free($3);*/
       } 
-    | CONTENT_DISPOSITIONLWSCOLON LWS_0toN _TOKEN semicolon_dispparam_1toN {
+    | CONTENT_DISPOSITIONLWSCOLON LWS_0toN _TOKEN semicolon_fromparam_1toN {
         headerptr->contentDisposition()().dispositionType()= $3;
         headerptr->contentDisposition()().dispositionParams()()=*paramptr;
         delete paramptr;
@@ -446,10 +448,6 @@ Content_Disposition:
         paramcount=0;
 //        Free($3);
       };
-
-semicolon_dispparam_1toN:
-      SOMELWS_SEMICOLON from_param {}
-    | semicolon_dispparam_1toN SOMELWS_SEMICOLON from_param {};
 
 Content_Encoding:
     CONTENT_ENCODINGLWSCOLON conctencoding1_N {} ;
@@ -948,7 +946,7 @@ routebody1toN:
     | routebody1toN SOMELWSCOMMA routeadress{};
 
 routeadress:
-    LWS_0toN display_name _ABO addr_spec _ABC semicolon_toparam_1toN {
+    LWS_0toN display_name _ABO addr_spec _ABC semicolon_fromparam_1toN {
         (*routeptr)[rcount].nameAddr().displayName()=$2;
         (*routeptr)[rcount].nameAddr().addrSpec()= *uriptr;
         (*routeptr)[rcount].rrParam()()= *paramptr;
@@ -962,7 +960,7 @@ routeadress:
         paramcount=0;
 //        Free($2);
       } 
-    | LWS_0toN _ABO addr_spec _ABC semicolon_toparam_1toN {
+    | LWS_0toN _ABO addr_spec _ABC semicolon_fromparam_1toN {
         (*routeptr)[rcount].nameAddr().displayName()=OMIT_VALUE;
         (*routeptr)[rcount].nameAddr().addrSpec()= *uriptr;
         (*routeptr)[rcount].rrParam()()= *paramptr;
@@ -1319,6 +1317,8 @@ general_header:
         {headerptr->ppreferredID()().fieldName()=FieldName::P__PREFERRED__ID__E;}
     | p_access_net_header _CRLF
         {headerptr->p__access__network__info()().fieldName()=FieldName::P__ACCESS__NETWORK__INFO;}
+    | p_last_access_net_header _CRLF
+        {headerptr->p__last__access__network__info()().fieldName()=FieldName::P__LAST__ACCESS__NETWORK__INFO;}
     | p_charge_addr _CRLF 
         {headerptr->p__charging__function__address()().fieldName()=FieldName::P__CHARGING__FUNCTION__ADDRESS;}
     | p_charge_vector _CRLF 
@@ -1933,7 +1933,7 @@ routebdy1toN:
       };
 
 routeadr:
-    LWS_0toN display_name _ABO addr_spec _ABC semicolon_toparam_1toN {
+    LWS_0toN display_name _ABO addr_spec _ABC semicolon_fromparam_1toN {
         $$ = new RouteBody;
         $$->nameAddr().displayName()=$2;
         $$->nameAddr().addrSpec()= *uriptr;
@@ -1947,7 +1947,7 @@ routeadr:
         paramcount=0;
 //        Free($2);
       } 
-    | LWS_0toN _ABO addr_spec _ABC semicolon_toparam_1toN {
+    | LWS_0toN _ABO addr_spec _ABC semicolon_fromparam_1toN {
         $$ = new RouteBody;
         $$->nameAddr().displayName()=OMIT_VALUE;
         $$->nameAddr().addrSpec()= *uriptr;
@@ -2220,7 +2220,6 @@ semicolon_param_1toN:
     from_param {}
     | semicolon_param_1toN SOMELWS_SEMICOLON from_param {};
 
-
 p_access_net_header:
     PACCESSNETLWSCOLON anetspec_1toN{
       if(headerptr->p__access__network__info().ispresent()){
@@ -2236,6 +2235,20 @@ p_access_net_header:
       delete $2;
    };
    
+p_last_access_net_header:
+    PLASTACCESSNETLWSCOLON anetspec_1toN{
+      if(headerptr->p__last__access__network__info().ispresent()){
+        int a=headerptr->p__last__access__network__info()().access__net__specs().size_of();
+        for(int b=0;b<$2->size_of();b++){
+          headerptr->p__last__access__network__info()().access__net__specs()[a]=(*$2)[b];
+          a++;
+          }
+      }
+      else {
+        headerptr->p__last__access__network__info()().access__net__specs()=*$2;
+      }
+      delete $2;
+   };
 anetspec_1toN:
     anetspec{
         $$= new Access__net__spec__list;
@@ -2256,7 +2269,7 @@ anetspec:
         $$->access__info()=OMIT_VALUE;
 //        Free($2);
       }
-    | LWS_0toN display_name semicolon_fromparam_1toN{
+    | LWS_0toN display_name semicolon_paniparam_1toN{
         $$= new Access__net__spec;
         $$->access__type()=$2;
         $$->access__info()=*paramptr;
@@ -2637,7 +2650,7 @@ reason_:
         reasoncount++;
 //        Free($2);
       } 
-    | LWS_0toN _TOKEN semicolon_dispparam_1toN {
+    | LWS_0toN _TOKEN semicolon_fromparam_1toN {
         headerptr->reason()().reasons()[reasoncount].protocol()= $2;
         headerptr->reason()().reasons()[reasoncount].reasonValues()()=*paramptr;
         reasoncount++;
@@ -2754,7 +2767,7 @@ ReplyTo:
     REPLY_TOLWSCOLON replytobody {};
 
 replytobody:
-    LWS_0toN display_name _ABO addr_spec _ABC semicolon_toparam_1toN {
+    LWS_0toN display_name _ABO addr_spec _ABC semicolon_fromparam_1toN {
         headerptr->replyTo()().addressField().nameAddr().displayName() = $2;
         headerptr->replyTo()().addressField().nameAddr().addrSpec()= *uriptr;
         headerptr->replyTo()().replyToParams()=*paramptr;
@@ -2768,7 +2781,7 @@ replytobody:
 
 //        Free($2);
       } 
-    | LWS_0toN _ABO addr_spec _ABC semicolon_toparam_1toN {
+    | LWS_0toN _ABO addr_spec _ABC semicolon_fromparam_1toN {
         headerptr->replyTo()().addressField().nameAddr().displayName() = 
                                                                      OMIT_VALUE;
         headerptr->replyTo()().addressField().nameAddr().addrSpec()= *uriptr;
@@ -2780,7 +2793,7 @@ replytobody:
         paramptr= new GenericParam__List;
         paramcount=0;
       }
-    | LWS_0toN addr_spec_withnoparam semicolon_toparam_1toN {
+    | LWS_0toN addr_spec_withnoparam semicolon_fromparam_1toN {
         headerptr->replyTo()().addressField().addrSpecUnion()= *uriptr;
         headerptr->replyTo()().replyToParams()=*paramptr;
         delete uriptr;
@@ -3265,10 +3278,6 @@ Toheader:
         urlparamcount=headercount=0;
       };
 
-semicolon_toparam_1toN:
-    SOMELWS_SEMICOLON from_param {}
-    | semicolon_toparam_1toN SOMELWS_SEMICOLON from_param {};
-
 Contact:
     CONTACTLWSCOLON LWS_0toN _STAR {
         headerptr->contact()().contactBody().wildcard()=$3;
@@ -3281,7 +3290,7 @@ contactbody1toN:
     | contactbody1toN SOMELWSCOMMA contactadress{};
 
 contactadress:
-    LWS_0toN display_name _ABO addr_spec _ABC semicolon_toparam_1toN {
+    LWS_0toN display_name _ABO addr_spec _ABC semicolon_fromparam_1toN {
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
                     addressField().nameAddr().displayName()= $2;
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
@@ -3297,7 +3306,7 @@ contactadress:
         paramcount=0;
 //        Free($2);
       }
-    | LWS_0toN _ABO addr_spec _ABC semicolon_toparam_1toN {
+    | LWS_0toN _ABO addr_spec _ABC semicolon_fromparam_1toN {
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
                     addressField().nameAddr().displayName()= OMIT_VALUE;
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
@@ -3312,7 +3321,7 @@ contactadress:
         paramptr= new GenericParam__List;
         paramcount=0;
       }
-    | LWS_0toN addr_spec_withnoparam semicolon_toparam_1toN {
+    | LWS_0toN addr_spec_withnoparam semicolon_fromparam_1toN {
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
                     addressField().addrSpecUnion()= *uriptr;
         headerptr->contact()().contactBody().contactAddresses()[contactcount].
@@ -3461,6 +3470,43 @@ from_param_withoutlws:
         paramcount++;
 //        Free($1);
       };
+semicolon_paniparam_1toN:
+    SOMELWS_SEMICOLON pani_param { }
+    | semicolon_paniparam_1toN SOMELWS_SEMICOLON pani_param {};
+
+pani_param:
+    SOMELWS _TOKEN SOMELWS equals_token_host_qtdstr {
+        (*paramptr)[paramcount].id()=$2;
+        (*paramptr)[paramcount].paramValue()=$4;
+        paramcount++;
+      }
+    | _TOKEN SOMELWS equals_token_host_qtdstr {
+        (*paramptr)[paramcount].id()=$1;
+        (*paramptr)[paramcount].paramValue()=$3;
+        paramcount++;
+      }
+    | SOMELWS _TOKEN equals_token_host_qtdstr {
+        (*paramptr)[paramcount].id()=$2;
+        (*paramptr)[paramcount].paramValue()=$3;
+        paramcount++;
+      }
+    | _TOKEN equals_token_host_qtdstr {
+        (*paramptr)[paramcount].id()=$1;
+        (*paramptr)[paramcount].paramValue()=$2;
+        paramcount++;
+      }
+    | SOMELWS token_or_host_or_quotedstring {
+        (*paramptr)[paramcount].id()=$2;
+        (*paramptr)[paramcount].paramValue()=OMIT_VALUE;
+        paramcount++;
+      }
+    | token_or_host_or_quotedstring {
+        (*paramptr)[paramcount].id()=$1;
+        (*paramptr)[paramcount].paramValue()=OMIT_VALUE;
+        paramcount++;
+      };
+    
+    
 
 equals_token_host_qtdstr:
     EQUALSIGN SOMELWS token_or_host_or_quotedstring {$$=$3;}

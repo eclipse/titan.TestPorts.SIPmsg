@@ -19,7 +19,7 @@
 ******************************************************************************/
 //
 //  File:               SIP_parse.l
-//  Rev:                R12D
+//  Rev:                R14A
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -45,8 +45,35 @@ using namespace SIPmsg__Types;
 extern RequestLine *rqlineptr;
 extern StatusLine *stlineptr;
 extern MessageHeader *headerptr;
+extern PDU__SIP *msgptr;
 
 extern int wildcarded_enabled_parser;
+
+static const MessageHeader emptyheaders=MessageHeader(
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE
+  );
 
 // header part pointers
 SipUrl *uriptr=NULL;
@@ -378,8 +405,7 @@ HNAME   ({HNV_UR}|{UR}|{ESCAPED})+
 HVALUE  ({HNV_UR}|{UR}|{ESCAPED})*
 HNV_UR  [\133]|[\135]|[/]|[\077]|{COLON}|[\+]|[\$]
 
-METHOD  ({I}{N}{V}{I}{T}{E})|({C}{A}{N}{C}{E}{L})|({O}{P}{T}{I}{O}{N}{S})|({R}{E}{G}{I}{S}{T}{E}{R})|({B}{Y}{E})|({A}{C}{K})|({I}{N}{F}{O})|({U}{P}{D}{A}{T}{E})|({P}{R}{A}{C}{K})|({P}{U}{B}{L}{I}{S}{H})|({S}{U}{B}{S}{C}{R}{I}{B}{E})|({N}{O}{T}{I}{F}{Y})|{EXT_MET}
-EXT_MET {TOKEN}
+METHOD  ({I}{N}{V}{I}{T}{E})|({C}{A}{N}{C}{E}{L})|({O}{P}{T}{I}{O}{N}{S})|({R}{E}{G}{I}{S}{T}{E}{R})|({B}{Y}{E})|({A}{C}{K})|({I}{N}{F}{O})|({U}{P}{D}{A}{T}{E})|({P}{R}{A}{C}{K})|({P}{U}{B}{L}{I}{S}{H})|({S}{U}{B}{S}{C}{R}{I}{B}{E})|({N}{O}{T}{I}{F}{Y})|({R}{E}{F}{E}{R})|({M}{E}{S}{S}{A}{G}{E})
 
 PRTNAME ({S}{I}{P})|{TOKEN}
 PRTVERS {TOKEN}
@@ -392,97 +418,99 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <INITIAL>{OLDCRLF}+                                                                     num_chars+=SIP_parse_leng;
 
 
-<INITIAL>{METHOD}                                                                       {//{num_chars+=SIP_parse_leng;
-                                                                                        //BEGIN(requriver); SIP_parse_lval.sv=(char*)Malloc((SIP_parse_leng+3)*sizeof(char)); strcpy(SIP_parse_lval.sv,strupr(SIP_parse_text));
-                                                                                        //SIP_parse_lval.sv[SIP_parse_leng]='_';SIP_parse_lval.sv[SIP_parse_leng+1]='E';SIP_parse_lval.sv[SIP_parse_leng+2]='\0';
-                                                                                        //rqlineptr = new RequestLine;
-	  										///*initcounters();*/
-                                                                                        //return _METHOD;}
+<INITIAL>{METHOD}                                                                       {
+                      num_chars+=SIP_parse_leng; 
+                      BEGIN(requriver);
+                      SIP_parse_lval.sv = stream_buffer; 
+                      pos_in_buf=SIP_parse_leng+3;
+                      strcpy(SIP_parse_lval.sv,strupr(SIP_parse_text));
+                      //dump(stream_buffer, 20);
+                      SIP_parse_lval.sv[SIP_parse_leng]='_';SIP_parse_lval.sv[SIP_parse_leng+1]='E';SIP_parse_lval.sv[SIP_parse_leng+2]='\0';
+                      if(msgptr){
+                      headerptr = &(msgptr->request().msgHeader());
+                        *headerptr=emptyheaders;
+                        rqlineptr=&(msgptr->request().requestLine());
+                      } else {
+                      rqlineptr = new RequestLine;
+                      }
 
-											// New style
-											num_chars+=SIP_parse_leng; 
-											BEGIN(requriver);
-											SIP_parse_lval.sv = stream_buffer; 
-											pos_in_buf=SIP_parse_leng+3;
-											strcpy(SIP_parse_lval.sv,strupr(SIP_parse_text));
-											//dump(stream_buffer, 20);
-											//printf("METHOD: %d, %p, %s, %s\n", pos_in_buf, stream_buffer, stream_buffer, SIP_parse_lval.sv);
-                                                                                        SIP_parse_lval.sv[SIP_parse_leng]='_';SIP_parse_lval.sv[SIP_parse_leng+1]='E';SIP_parse_lval.sv[SIP_parse_leng+2]='\0';
-                                                                                        rqlineptr = new RequestLine;
-                                                                                        /*initcounters();*/
-                                                                                        return _METHOD;}
-<INITIAL>{SPHTVER}                                                                      {//num_chars+=SIP_parse_leng; BEGIN(statuscode); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); stlineptr=new StatusLine; /*initcounters();*/return SIP_SPHT_VERSION;
-											
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(statuscode);
-											SIP_parse_lval.sv = stream_buffer;
-											pos_in_buf=SIP_parse_leng+1;
+                      /*initcounters();*/
+                      return _METHOD;}
+<INITIAL>{SPHTVER}                                                                      {
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(statuscode);
+                      SIP_parse_lval.sv = stream_buffer;
+                      pos_in_buf=SIP_parse_leng+1;
                                                                                         strcpy(SIP_parse_lval.sv, SIP_parse_text); 
-											//dump(stream_buffer, 20);
-											//printf("SIP_SPHT_VERSION: %d, %p, %s, %s\n", pos_in_buf, stream_buffer, stream_buffer, SIP_parse_lval.sv);
-											stlineptr=new StatusLine;
-											/*initcounters();*/
-											return SIP_SPHT_VERSION;}
+                      //dump(stream_buffer, 20);
+                      if(msgptr){
+                        headerptr = &(msgptr->response().msgHeader());
+                        *headerptr=emptyheaders;
+                        stlineptr=&(msgptr->response().statusLine());
+                      } else {
+                      stlineptr=new StatusLine;
+                      }
+                      /*initcounters();*/
+                      return SIP_SPHT_VERSION;}
 <requriver>{VER}                                                                        {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text);  return SIP_VERSION;
 
-											// New style
-											num_chars+=SIP_parse_leng;
-											//SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											//printf("SIP_VERSION: %d, %p, %s, %s\n", pos_in_buf, stream_buffer, stream_buffer, SIP_parse_lval.sv);
-											return SIP_VERSION;}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      //SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      //printf("SIP_VERSION: %d, %p, %s, %s\n", pos_in_buf, stream_buffer, stream_buffer, SIP_parse_lval.sv);
+                      return SIP_VERSION;}
 <requriver>{TOKEN}{COLON}                                                               {//num_chars+=SIP_parse_leng; if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithparamusrtel);} else {BEGIN(uriwithparamhstprt);} kovall=requriver; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											
-											// New style
-											num_chars+=SIP_parse_leng;
+                      
+                      // New style
+                      num_chars+=SIP_parse_leng;
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urn);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithparamusrtel);
-											} else {
-											  BEGIN(uriwithparamhstprt);
-											}
+                        BEGIN(urn);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithparamusrtel);
+                      } else {
+                        BEGIN(uriwithparamhstprt);
+                      }
 
 
-											kovall=requriver;
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;}
+                      kovall=requriver;
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;}
 <statuscode,requriver,warning>{SP}                                                      num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return _SP;
 <statuscode>{DIGIT}{3}                                                                  num_chars+=SIP_parse_leng; BEGIN(reasonsp); SIP_parse_lval.iv=atoi(SIP_parse_text); return EXTENSION_CODE;
 
 <reasonsp>{SP}                                                                          num_chars+=SIP_parse_leng; BEGIN(reason); SIP_parse_lval.cv=SIP_parse_text[0]; return _SP;
 <reason>{UTF8WOE}*                                                                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return REASON_PHRASE;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											return REASON_PHRASE;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      return REASON_PHRASE;
+                      }
 
 <generalcontent,organization>({ANLWS}|{NONLWS}|{SP}|{HT})+                              {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return CONTENT_WITHOUTENDINGCRLF;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											return CONTENT_WITHOUTENDINGCRLF;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      return CONTENT_WITHOUTENDINGCRLF;
+                      }
 <acceptstencoding,contentencoding,contentlang>({ANLWS}|{NONLWSA}|{SP}|{HT})+            {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _STOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _STOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _STOKEN;
+                      }
 <acceptstencoding,contentencoding,contentlang,alloweventst>{ANLWS}*[,]                  num_chars+=SIP_parse_leng; return SOMELWSCOMMA;
 
 <front>{CRLF}                                                                           num_chars+=SIP_parse_leng; BEGIN(INITIAL); return LONE_CRLF;
@@ -509,95 +537,95 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>(({R}{E}{F}{E}{R}{R}{E}{D}[-]{B}{Y})|{B}){ANLWS}*{COLON}                         num_chars+=SIP_parse_leng; BEGIN(fromfield); return REFERREDBYTOLWSCOLON;
 <front>(({F}{R}{O}{M})|{F}){ANLWS}*{COLON}                                              num_chars+=SIP_parse_leng; BEGIN(fromfield); return FROMLWSCOLON;
 <fromfield>{QDSTR}                                                                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      return QUOTED_STRING;
+                      }
 <fromfield>{TOKEN}(({ANLWS}*{TOKEN})*)                                                  {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return TOKENS;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											return TOKENS;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      return TOKENS;
+                      }
 <fromfield>[<]                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriwithparamscheme);kovall=fromparam; return _ABO;
 <fromfield>{TOKEN}{COLON}                                                               {//num_chars+=SIP_parse_leng; if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithoutparamusrtel);} else {BEGIN(uriwithoutparamhstprt);};kovall=fromparam; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											// New style
-											num_chars+=SIP_parse_leng;
+                      // New style
+                      num_chars+=SIP_parse_leng;
 
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urn);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithoutparamusrtel);
-											} else {
-											  BEGIN(uriwithoutparamhstprt);
-											}
+                        BEGIN(urn);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithoutparamusrtel);
+                      } else {
+                        BEGIN(uriwithoutparamhstprt);
+                      }
 
-											kovall=fromparam;
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;}
-											
+                      kovall=fromparam;
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;}
+                      
 <passertedservice,ppreferredservice>[u][r][n]{COLON}[u][r][n][-][7]{COLON}{TOKEN}       {num_chars+=SIP_parse_leng; 
                                                                                         SIP_parse_lval.sv=stream_buffer+pos_in_buf;
                                                                                         pos_in_buf+=SIP_parse_leng+1;
                                                                                         strcpy(SIP_parse_lval.sv,SIP_parse_text); 
                                                                                         return _TOKEN;
-											}																									
+                      }                                                  
 
 <authorization,proxyauthentication,proxyauthorization,wauth>{D}{I}{G}{E}{S}{T}          num_chars+=SIP_parse_leng; return _DIGEST;
 
 
 <authorization,proxyauthentication,proxyauthorization,wauth,authinfo,privacyst,pserviceindication,pservicenotification>{TOKEN}  {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 
 <authorization,proxyauthentication,proxyauthorization,wauth,privacyst,eventst,alloweventst,eventparamst>{ANLWS}+  num_chars+=SIP_parse_leng;  return SOMELWS;
 <authorization,proxyauthentication,proxyauthorization,wauth>[=]                         num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <authorization,proxyauthentication,proxyauthorization,wauth>{HOST}                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 
 <authorization,proxyauthentication,proxyauthorization,wauth>{HOST2}                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 
 
 <authorization,proxyauthentication,proxyauthorization,wauth>{QDSTR}                     {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return QUOTED_STRING;
+                      }
 
 <authorization,proxyauthentication,proxyauthorization,wauth>{ANLWS}*[,]                 num_chars+=SIP_parse_leng; return SOMELWSCOMMA;
 <authorization,proxyauthentication,proxyauthorization,wauth,pmeadiaauth>{ANCRLF}        num_chars+=SIP_parse_leng; BEGIN(front); return _CRLF;
@@ -609,316 +637,316 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo>{ANLWS}*[;]        num_chars+=SIP_parse_leng; return SOMELWS_SEMICOLON;
 <retryafter,privacyst>{ANLWS}*[;]                                                       num_chars+=SIP_parse_leng; return SOMELWS_SEMICOLON;
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo,allow>{TOKEN}      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); if (strcmp(SIP_parse_lval.sv,"*")){return _TOKEN;}  else {return _STAR;};
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											if (strcmp(SIP_parse_lval.sv,"*")){
-											  return _TOKEN;
-											} else {
-											  return _STAR;
-											}
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      if (strcmp(SIP_parse_lval.sv,"*")){
+                        return _TOKEN;
+                      } else {
+                        return _STAR;
+                      }
+                      }
 
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo,authinfo>[=]       num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo,authinfo>{HOST}    {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <viaparam>{IPVSIXA}    {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo,authinfo>{HOST2}    {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <viaparam,toparam,fromparam,acceptst,acceptstlang,alertinfo,callinfo,authinfo>{QDSTR}   {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return QUOTED_STRING;
+                      }
 <acceptst,acceptstlang,alertinfo,callinfo,allow,authinfo,errorinfo,passertedservice,ppreferredservice>{ANLWS}*[,]          num_chars+=SIP_parse_leng; return SOMELWSCOMMA;
 <proxyreq,requirest,supportedst,unsupportedst,warning,contact>{ANLWS}*[,]               num_chars+=SIP_parse_leng; return SOMELWSCOMMA;
 <recroute,routest,inreplyto,contentdisp,fromparam,pmeadiaauth>{ANLWS}*[,]               num_chars+=SIP_parse_leng; return SOMELWSCOMMA;
 <acceptst>[/]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return _SLASH;
 
 <server,useragent>{NONLWSD}+                                                            {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 
 <callinfo>[<]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(callinfouri); return _ABO;
 <callinfouri>{NONLWSB}*                                                                 {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _URLTOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _URLTOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _URLTOKEN;
+                      }
 <callinfouri>[>]                                                                        num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(callinfo); return _ABC;
 
 <contentdisp,contenttype,datestate,pserviceindication,pservicenotification,errorinfo,expires,inreplyto,maxforwards,xaut,xcarrierinfo,xchgdelay>{ANLWS}+     num_chars+=SIP_parse_leng; return SOMELWS;
 <contentdisp,errorinfo,eventparamst,contact,replyto,recroute,routest>{ANLWS}*[;]        num_chars+=SIP_parse_leng; return SOMELWS_SEMICOLON;
-<eventst>{ANLWS}*[;]                          	      	      	      	      	      	num_chars+=SIP_parse_leng; BEGIN(eventparamst);return SOMELWS_SEMICOLON;
+<eventst>{ANLWS}*[;]                                                                    num_chars+=SIP_parse_leng; BEGIN(eventparamst);return SOMELWS_SEMICOLON;
 <contentdisp,eventparamst,errorinfo,expires,minexpires,proxyreq,requirest,retryafter,xaut,xcarrierinfo,xchgdelay>{TOKEN} {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-												     // New style
-												     num_chars+=SIP_parse_leng; 
-												     SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-												     pos_in_buf+=SIP_parse_leng+1;
-												     strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-												     return _TOKEN;
-												     }
+                             // New style
+                             num_chars+=SIP_parse_leng; 
+                             SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                             pos_in_buf+=SIP_parse_leng+1;
+                             strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                             return _TOKEN;
+                             }
 
 <warning>{PORT}                                                                         num_chars+=SIP_parse_leng;  SIP_parse_lval.iv=atoi(SIP_parse_text); return _PORT;
 <supportedst,unsupportedst,warning,contact,replyto,recroute,routest>{TOKEN}             {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <contentdisp,eventparamst,errorinfo,retryafter,contact,replyto,recroute,routest>[=]                  num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <contentdisp,eventparamst,errorinfo,retryafter,contact,replyto,recroute,routest,warning>{HOST}       {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-												     // New style
-												     num_chars+=SIP_parse_leng; 
-												     SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-												     pos_in_buf+=SIP_parse_leng+1;
-												     strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-												     return _HOST;
-												     }
+                             // New style
+                             num_chars+=SIP_parse_leng; 
+                             SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                             pos_in_buf+=SIP_parse_leng+1;
+                             strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                             return _HOST;
+                             }
 <contentdisp,eventparamst,errorinfo,retryafter,contact,replyto,recroute,routest,warning>{HOST2}       {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-												     // New style
+                             // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-												     num_chars+=SIP_parse_leng; 
-												     SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-												     pos_in_buf+=SIP_parse_leng+1;
-												     strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-												     return _HOST;
-												     }
+                             num_chars+=SIP_parse_leng; 
+                             SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                             pos_in_buf+=SIP_parse_leng+1;
+                             strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                             return _HOST;
+                             }
 <contentdisp,eventparamst,errorinfo,retryafter,recroute,routest,warning>{QDSTR}                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-												     // New style
-												     num_chars+=SIP_parse_leng; 
-												     SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-												     pos_in_buf+=SIP_parse_leng+1;
-												     strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-												     return QUOTED_STRING;
-												     }
+                             // New style
+                             num_chars+=SIP_parse_leng; 
+                             SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                             pos_in_buf+=SIP_parse_leng+1;
+                             strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                             return QUOTED_STRING;
+                             }
 <contentdisp>{ANCRLF}                                                                   num_chars+=SIP_parse_leng; BEGIN(front); return _CRLF;
 <rackst>{WTOKEN}                                                                        {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <eventst,alloweventst>{ANLWS}*[.]                                                                    num_chars+=SIP_parse_leng; return _DOT;
 <eventst,alloweventst>{TOKEN_NO_DOT}                                                                 {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN_NO_DOT;
-												     // New style
-												     num_chars+=SIP_parse_leng; 
-												     SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-												     pos_in_buf+=SIP_parse_leng+1;
-												     strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-												     return _TOKEN_NO_DOT;
-												     }
+                             // New style
+                             num_chars+=SIP_parse_leng; 
+                             SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                             pos_in_buf+=SIP_parse_leng+1;
+                             strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                             return _TOKEN_NO_DOT;
+                             }
 
 <retryafter>[(]                                                                         num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(par);kovall=retryafter;level=1; return SPARENT;
 <server>[(]                                                                             num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(par);kovall=server;level=1; return SPARENT;
 <useragent>[(]                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(par);kovall=useragent;level=1; return SPARENT;
 
 <par>({ANLWS}|{NONLWSD}|{SP}|{HT})+                                                     {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _COMMENT;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _COMMENT;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _COMMENT;
+                      }
 <par>[(]                                                                                {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); level++; return _COMMENT;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											level++;
-											return _COMMENT;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      level++;
+                      return _COMMENT;
+                      }
 <par>[)]                                                                                {//num_chars+=SIP_parse_leng; level--;
                                                                                         //        if(!level) {BEGIN(kovall); SIP_parse_lval.cv=SIP_parse_text[0]; return EPARENT;}
                                                                                         //        else {SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _COMMENT;}
-											
-											// New style
-											num_chars+=SIP_parse_leng; level--;
+                      
+                      // New style
+                      num_chars+=SIP_parse_leng; level--;
                                                                                         if(!level) {
-											  BEGIN(kovall);
-											  SIP_parse_lval.cv=SIP_parse_text[0];
-											  return EPARENT;}
+                        BEGIN(kovall);
+                        SIP_parse_lval.cv=SIP_parse_text[0];
+                        return EPARENT;}
                                                                                         else {
-											  SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											  pos_in_buf+=SIP_parse_leng+1;
-											  strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											  return _COMMENT;
-											}
-											}
+                        SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                        pos_in_buf+=SIP_parse_leng+1;
+                        strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                        return _COMMENT;
+                      }
+                      }
 
 <minexpires,pmeadiaauth,billinginfost,xfci>{ANLWS}+                                          num_chars+=SIP_parse_leng; return SOMELWS;
 <billinginfost>{HEX}+                                                                   {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text);return _HEXTOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HEXTOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HEXTOKEN;
+                      }
 <xfci>{HEX}+                                                                            {
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HEXTOKEN;
-											}                                                                                        
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HEXTOKEN;
+                      }                                                                                        
 <pmeadiaauth>{HEX}+                                                                     {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text);return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <mimever,replacesst>{ANLWS}+                                                            num_chars+=SIP_parse_leng; return SOMELWS;
 <mimever,timestamp>[.]                                                                  num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return _DOT;
 
 <alertinfo>[<]                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(alertinfouri);kovall=fromparam; return _ABO;
 <alertinfouri>{NONLWSB}*                                                                {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _URLTOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _URLTOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _URLTOKEN;
+                      }
 <alertinfouri>[>]                                                                       num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(alertinfo); return _ABC;
 
 <errorinfo>[<]                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(errorinfouri);kovall=fromparam; return _ABO;
 <errorinfouri>{NONLWSB}*                                                                {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _URLTOKEN;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _URLTOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _URLTOKEN;
+                      }
 <errorinfouri>[>]                                                                       num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(errorinfo); return _ABC;
 
 <front>(({T}{O})|{T}){ANLWS}*{COLON}                                                    num_chars+=SIP_parse_leng; BEGIN(tofield); return TOLWSCOLON;
 <tofield,contact,replyto,contactbeg>{QDSTR}                                             {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return QUOTED_STRING;
+                      }
 <tofield,contact,replyto,recroute,routest>{TOKEN}(({ANLWS}*{TOKEN})*)                   {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return TOKENS;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return TOKENS;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return TOKENS;
+                      }
 <contactbeg>{TOKEN}(({ANLWS}*{TOKEN})*)                                                 {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); 
                                                                                         //if (strcmp(SIP_parse_lval.sv,"*")){return TOKENS;}
                                                                                         //else {return _STAR;}
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											if (strcmp(SIP_parse_lval.sv,"*")) { 
-											  return TOKENS;
-											} else {
-											  return _STAR;
-											}
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      if (strcmp(SIP_parse_lval.sv,"*")) { 
+                        return TOKENS;
+                      } else {
+                        return _STAR;
+                      }
+                      }
 
 <tofield>[<]                                                                            num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriwithparamscheme); kovall=toparam; return _ABO;
 <tofield>{TOKEN}{COLON}                                                                 {//num_chars+=SIP_parse_leng; if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithoutparamusrtel);} else {BEGIN(uriwithoutparamhstprt);}; kovall=toparam; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											// New style
-											num_chars+=SIP_parse_leng;
+                      // New style
+                      num_chars+=SIP_parse_leng;
 
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urn);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithoutparamusrtel);
-											} else {
-											  BEGIN(uriwithoutparamhstprt);
-											}
+                        BEGIN(urn);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithoutparamusrtel);
+                      } else {
+                        BEGIN(uriwithoutparamhstprt);
+                      }
 
 
-											kovall=toparam;
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;											
-											}
+                      kovall=toparam;
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;                      
+                      }
 
 <contact,contactbeg>[<]                                                                 num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriwithparamscheme); kovall=contact; return _ABO;
 <contact,contactbeg>{TOKEN}{COLON}                                                      {//num_chars+=SIP_parse_leng; if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithoutparamusrtel);} else {BEGIN(uriwithoutparamhstprt);}; kovall=contact; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											// New style
-											num_chars+=SIP_parse_leng;
+                      // New style
+                      num_chars+=SIP_parse_leng;
 
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urn);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithoutparamusrtel);
-											} else {
-											  BEGIN(uriwithoutparamhstprt);
-											}
+                        BEGIN(urn);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithoutparamusrtel);
+                      } else {
+                        BEGIN(uriwithoutparamhstprt);
+                      }
 
 
-											kovall=contact;
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;											
-											}
+                      kovall=contact;
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;                      
+                      }
 
 <recroute>[<]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriwithparamscheme); kovall=recroute; return _ABO;
 
@@ -926,218 +954,218 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 
 <replyto>[<]                                                                            num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriwithparamscheme); kovall=replyto; return _ABO;
 <replyto>{TOKEN}{COLON}                                                                 {//num_chars+=SIP_parse_leng;if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithoutparamusrtel);} else {BEGIN(uriwithoutparamhstprt);} kovall=replyto; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											// New style
-											num_chars+=SIP_parse_leng;
+                      // New style
+                      num_chars+=SIP_parse_leng;
 
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urn);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithoutparamusrtel);
-											} else {
-											  BEGIN(uriwithoutparamhstprt);
-											}
+                        BEGIN(urn);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithoutparamusrtel);
+                      } else {
+                        BEGIN(uriwithoutparamhstprt);
+                      }
 
 
-											kovall=replyto;
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;											
-											}
+                      kovall=replyto;
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;                      
+                      }
 <replacesst>{TOKEN_ID}                                                                  {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _CALLID;
-											// New style
-											num_chars+=SIP_parse_leng; 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _CALLID;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng; 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _CALLID;
+                      }
 
 
  /******************  SIP URI *****************/
 <uriwithparamscheme>{TOKEN}{COLON}                                                      {//num_chars+=SIP_parse_leng; if(strcasecmp(SIP_parse_text,"tel:")){BEGIN(uriwithparamusrtel);} else {BEGIN(uriwithparamhstprt);}  SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return SCHEME;
-											// New style
-											num_chars+=SIP_parse_leng;
+                      // New style
+                      num_chars+=SIP_parse_leng;
 
                       if(!strcasecmp(SIP_parse_text,"urn:")){
-											  BEGIN(urnwithparams);
-											} else if(strcasecmp(SIP_parse_text,"tel:")){
-											  BEGIN(uriwithparamusrtel);
-											} else {
-											  BEGIN(uriwithparamhstprt);
-											}
+                        BEGIN(urnwithparams);
+                      } else if(strcasecmp(SIP_parse_text,"tel:")){
+                        BEGIN(uriwithparamusrtel);
+                      } else {
+                        BEGIN(uriwithparamhstprt);
+                      }
 
-											
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return SCHEME;											
-											}
+                      
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return SCHEME;                      
+                      }
 <uriwithparamusrtel>{USERIN}                                                            {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamhstprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text);SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return USERINFO_AT;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamhstprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return USERINFO_AT;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamhstprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return USERINFO_AT;
+                      }
 <uriwithparamusrtel>{USERIN2}                                                            {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamhstprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text);SIP_parse_lval.sv[SIP_parse_leng-1]='\0'; return USERINFO_AT;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='[';
                         return '[';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamhstprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return USERINFO_AT;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamhstprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return USERINFO_AT;
+                      }
 <uriwithoutparamusrtel>{USERIN}                                                         {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamhstprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0';return USERINFO_AT;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamhstprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return USERINFO_AT;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamhstprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return USERINFO_AT;
+                      }
 <uriwithoutparamusrtel>{USERIN2}                                                         {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamhstprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[SIP_parse_leng-1]='\0';return USERINFO_AT;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='[';
                         return '[';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamhstprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
-											return USERINFO_AT;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamhstprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      SIP_parse_lval.sv[SIP_parse_leng-1]='\0';
+                      return USERINFO_AT;
+                      }
 <uriwithparamusrtel>([/]*){HOST}                                                        {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithparamusrtel>([/]*){HOST2}                                                        {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithoutparamusrtel>([/]*){HOST}                                                     {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithoutparamusrtel>([/]*){HOST2}                                                     {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 
 <uriwithparamhstprt>([/]*){HOST}                                                        {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithparamhstprt>([/]*){HOST2}                                                        {//num_chars+=SIP_parse_leng; BEGIN(uriwithparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithoutparamhstprt>([/]*){HOST}                                                     {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <urnwithparams>{URNDEF}         {
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 
 <urn>{URNDEF2}         {
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(kovall); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(kovall); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriwithoutparamhstprt>([/]*){HOST2}                                                     {//num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamcolprt); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriwithoutparamcolprt); 
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriwithoutparamcolprt); 
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 
 <uriwithparamcolprt>{COLON}                                                             num_chars+=SIP_parse_leng; BEGIN(uriwithparamport); SIP_parse_lval.cv=SIP_parse_text[0]; return _COLON;
 <uriwithoutparamcolprt>{COLON}                                                          num_chars+=SIP_parse_leng; BEGIN(uriwithoutparamport); SIP_parse_lval.cv=SIP_parse_text[0]; return _COLON;
@@ -1160,63 +1188,63 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <uriparam>{SP}                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(kovall); return _SP;
 <uriparam>[;]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return SEMICOLON;
 <uriparam>{TOKEN}                                                                       {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <uriparam>{PNAME}                                                                       {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <uriparam>[=]                                                                           num_chars+=SIP_parse_leng; BEGIN (uriparamvalue); SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <uriparamvalue>{PVALUE}                                                                  {//num_chars+=SIP_parse_leng;BEGIN (uriparam); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN (uriparam);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN (uriparam);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <uriparamvalue>{HOST}                                                                   {//num_chars+=SIP_parse_leng;BEGIN (uriparam); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN (uriparam);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN (uriparam);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriparamvalue>{HOST2}                                                                   {//num_chars+=SIP_parse_leng;BEGIN (uriparam); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN (uriparam);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN (uriparam);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <uriparamvalue>{QDSTR}                                                                  {//num_chars+=SIP_parse_leng;BEGIN (uriparam); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN (uriparam);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN (uriparam);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return QUOTED_STRING;
+                      }
 <uriparam,uriparamvalue>[\077]                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(uriheadr);   return QUESTMARK;
 
 <uriheadr>[>]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(kovall); return _ABC;
@@ -1224,23 +1252,23 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <uriheadr>{SP}                                                                          num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; BEGIN(kovall); return _SP;
 <uriheadr>[&]                                                                           num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return AMPERSANT;
 <uriheadr>{HNAME}                                                                       {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HNAME;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HNAME;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HNAME;
+                      }
 <uriheadr>[=]                                                                           num_chars+=SIP_parse_leng; BEGIN (uriheadrhvalue); SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <uriheadrhvalue>{HVALUE}                                                                {//num_chars+=SIP_parse_leng; BEGIN(uriheadr); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HVALUE;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(uriheadr);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HVALUE;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(uriheadr);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HVALUE;
+                      }
  /***************** SIP URI end ***********/
 
 
@@ -1257,13 +1285,13 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 
 
 <callid,inreplyto>{NONLWS_NONSC}+                                                            {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _CALLID;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _CALLID;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _CALLID;
+                      }
 
 <callid>{ANLWS}*[;]                                                                     {
                                                                                         num_chars+=SIP_parse_leng; BEGIN(fromparam);return SOMELWS_SEMICOLON;}
@@ -1281,55 +1309,55 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
                                                                                         return SUPPORTEDLWSCOLON;}
 <front>(({V}{I}{A})|{V}){ANLWS}*{COLON}                                                 num_chars+=SIP_parse_leng; BEGIN(via1);  return VIALWSCOLON;
 <via1>{PRTNAME}                                                                         {//num_chars+=SIP_parse_leng; BEGIN(via2); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return PROTOCOL_NAME;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(via2);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return PROTOCOL_NAME;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(via2);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return PROTOCOL_NAME;
+                      }
 <via2>{PRTVERS}                                                                         {//num_chars+=SIP_parse_leng; BEGIN(via3); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return PROTOCOL_VERSION;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(via3);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return PROTOCOL_VERSION;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(via3);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return PROTOCOL_VERSION;
+                      }
 <via3>{TRNSPRT}                                                                         {//num_chars+=SIP_parse_leng; BEGIN(via4); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return TRANSPORT;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(via4);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return TRANSPORT;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(via4);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return TRANSPORT;
+                      }
 <via4>{HOST}                                                                            {//num_chars+=SIP_parse_leng; BEGIN(via1); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(via1);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(via1);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <via4>{HOST2}                                                                            {//num_chars+=SIP_parse_leng; BEGIN(via1); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											BEGIN(via1);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(via1);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <via1>{COLON}                                                                           num_chars+=SIP_parse_leng; BEGIN(viaport); return _COLON;
 <viaport>{PORT}                                                                         num_chars+=SIP_parse_leng; BEGIN(via1); SIP_parse_lval.iv=atoi(SIP_parse_text); return _PORT;
 <via1,viaparam>{ANLWS}*[,](({ANLWS}|[,])*)                                              num_chars+=SIP_parse_leng; BEGIN(via1); return SOMELWS_COMMA_SOMELWS;
@@ -1342,48 +1370,48 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>({P}[-]{D}{C}{S}[-]{L}{A}{E}{S}){ANLWS}*{COLON}                                  num_chars+=SIP_parse_leng; BEGIN(laessthost);return PLAESLWSCOLON;
 <laesst>([c][o][n][t][e][n][t]){ANLWS}*[=]                                              num_chars+=SIP_parse_leng; BEGIN(laessthost); return _LAES_CONTENT;
 <laessthost>{HOST}                                                                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <laessthost>{HOST2}                                                                      {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _HOST;
-											// New style
+                      // New style
                       if(!wildcarded_enabled_parser){
                         num_chars+=SIP_parse_leng;
                         SIP_parse_lval.cv='!';
                         return '!';
                       }
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _HOST;
-											}
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _HOST;
+                      }
 <laessthost>{COLON}                                                                     num_chars+=SIP_parse_leng; BEGIN(laesst2); return _COLON;
 <laesst2>{PORT}                                                                         num_chars+=SIP_parse_leng; BEGIN(laesst); SIP_parse_lval.iv=atoi(SIP_parse_text); return _PORT;
 <laesst,laessthost>{ANLWS}*[;]                                                          num_chars+=SIP_parse_leng; BEGIN(laesst); return SOMELWS_SEMICOLON;
 <laesst,laesst2,laessthost>{ANLWS}+                                                     num_chars+=SIP_parse_leng; return SOMELWS;
 <laesst,laessthost>{ANCRLF}                                                             num_chars+=SIP_parse_leng; BEGIN(front); return _CRLF;
 <laesst>{TOKEN}                                                                         {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TOKEN;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TOKEN;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TOKEN;
+                      }
 <laesst>[=]                                                                             num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0]; return EQUALSIGN;
 <laesst>{QDSTR}                                                                         {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return QUOTED_STRING;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return QUOTED_STRING;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return QUOTED_STRING;
+                      }
 
 
 
@@ -1391,31 +1419,31 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>(({C}{O}{N}{T}{E}{N}{T}[-]{E}{N}{C}{O}{D}{I}{N}{G})|{E}){ANLWS}*{COLON}          num_chars+=SIP_parse_leng; BEGIN(contentencoding); return CONTENT_ENCODINGLWSCOLON;
 <front>(({C}{O}{N}{T}{E}{N}{T}[-]{L}{E}{N}{G}{T}{H})|{L}){ANLWS}*{COLON}                num_chars+=SIP_parse_leng; BEGIN(contentlength); return CONTENT_LENGTHLWSCOLON;
 <contentlength,cseq,maxforwards,mimever,timestamp,rackst,rseqst>{DIGIT}+                {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return SOMEDIGITS;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return SOMEDIGITS;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return SOMEDIGITS;
+                      }
 <geolocationerror>{DIGIT}+                {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return SOMEDIGITS;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
                       BEGIN(fromparam);
-											return SOMEDIGITS;
-											}
+                      return SOMEDIGITS;
+                      }
 <front>(({C}{O}{N}{T}{E}{N}{T}[-]{T}{Y}{P}{E})|{C}){ANLWS}*{COLON}                      num_chars+=SIP_parse_leng; BEGIN(contenttype); return CONTENT_TYPELWSCOLON;
 <contenttype,datestate>({ANLWS}|{NONLWS}|{SP}|{HT})+                                    {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _TYPEID;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _TYPEID;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _TYPEID;
+                      }
 
 <front>({A}{C}{2}{E}{P}{T}){ANLWS}*{COLON}                                              {num_chars+=SIP_parse_leng; BEGIN(acceptst); return ACCEPTLWSCOLON;}
 <front>({A}{C}{2}{E}{P}{T}[-]{E}{N}{C}{O}{D}{I}{N}{G}){ANLWS}*{COLON}                   num_chars+=SIP_parse_leng; BEGIN(acceptstencoding); return ACCEPT_ENCODINGLWSCOLON;
@@ -1423,13 +1451,13 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>({C}{A}{L}{2}[-]{I}{N}{F}{O}){ANLWS}*{COLON}                                     num_chars+=SIP_parse_leng; BEGIN(callinfo); return CALL_INFOLWSCOLON;
 <front>({C}{S}{E}{Q}){ANLWS}*{COLON}                                                    num_chars+=SIP_parse_leng; BEGIN(cseq); return CSEQLWSCOLON;
 <cseq>{METHOD}                                                                          {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _METHOD;
-											// New style
-											num_chars+=SIP_parse_leng;
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text); 
-											return _METHOD;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text); 
+                      return _METHOD;
+                      }
 <front>({D}{A}{T}{E}){ANLWS}*{COLON}                                                    num_chars+=SIP_parse_leng; BEGIN(datestate); return DATELWSCOLON;
 
 <front>({M}{I}{M}{E}[-]{V}{E}{R}{S}{I}{O}{N}){ANLWS}*{COLON}                            num_chars+=SIP_parse_leng; BEGIN(mimever); return MIME_VERSIONLWSCOLON;
@@ -1516,6 +1544,7 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>({P}[-]{C}{A}{L}{L}{E}{D}[-]{P}{A}{R}{T}{Y}[-]{I}{D}){ANLWS}*{COLON}             {num_chars+=SIP_parse_leng; BEGIN(routest);return PCALLEPPTYLWSCOLON;}
 <front>({P}[-]{V}{I}{S}{I}{T}{E}{D}[-]{N}{E}{T}{W}{O}{R}{K}[-]{I}{D}){ANLWS}*{COLON}    {num_chars+=SIP_parse_leng; BEGIN(routest);return PVISITEDNETLWSCOLON;}
 <front>({P}[-]{A}{C}{C}{E}{S}{S}[-]{N}{E}{T}{W}{O}{R}{K}[-]{I}{N}{F}{O}){ANLWS}*{COLON} {num_chars+=SIP_parse_leng; BEGIN(routest);return PACCESSNETLWSCOLON;}
+<front>({P}[-]{L}{A}{S}{T}[-]{A}{C}{C}{E}{S}{S}[-]{N}{E}{T}{W}{O}{R}{K}[-]{I}{N}{F}{O}){ANLWS}*{COLON} {num_chars+=SIP_parse_leng; BEGIN(routest);return PLASTACCESSNETLWSCOLON;}
 <front>({A}{N}{S}{W}{E}{R}[-]{M}{O}{D}{E}){ANLWS}*{COLON}                               {num_chars+=SIP_parse_leng; BEGIN(routest);return ANSWERMODELWSCOLON;}
 <front>({P}{R}{I}{V}[-]{A}{N}{S}{W}{E}{R}[-]{M}{O}{D}{E}){ANLWS}*{COLON}                {num_chars+=SIP_parse_leng; BEGIN(routest);return PRIVANSWERMODELWSCOLON;}
 <front>({A}{L}{E}{R}{T}[-]{M}{O}{D}{E}){ANLWS}*{COLON}                                  {num_chars+=SIP_parse_leng; BEGIN(routest);return ALERTMODELWSCOLON;}
@@ -1571,15 +1600,15 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 
 
 <front>({BADID}*)({ANLWS}*){COLON}                                                      {//num_chars+=SIP_parse_leng; BEGIN(generalcontent); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[strlen(SIP_parse_lval.sv)-1]='\0'; return OTHERLWSCOLON;
-											// New style
-											num_chars+=SIP_parse_leng;
-											BEGIN(generalcontent);
-											SIP_parse_lval.sv=stream_buffer+pos_in_buf;
-											pos_in_buf+=SIP_parse_leng+1;
-											strcpy(SIP_parse_lval.sv,SIP_parse_text);
-											SIP_parse_lval.sv[strlen(SIP_parse_lval.sv)-1]='\0'; 
-											return OTHERLWSCOLON;
-											}
+                      // New style
+                      num_chars+=SIP_parse_leng;
+                      BEGIN(generalcontent);
+                      SIP_parse_lval.sv=stream_buffer+pos_in_buf;
+                      pos_in_buf+=SIP_parse_leng+1;
+                      strcpy(SIP_parse_lval.sv,SIP_parse_text);
+                      SIP_parse_lval.sv[strlen(SIP_parse_lval.sv)-1]='\0'; 
+                      return OTHERLWSCOLON;
+                      }
 
 <*>.                                                                                    num_chars+=SIP_parse_leng; SIP_parse_lval.cv=SIP_parse_text[0];  return SIP_parse_text[0];
 
@@ -1655,7 +1684,7 @@ void initcounters(){
         contentenccount=0;
         contentlangcount=0;
         errorinfocount=0;
-	featureCapscount=0;
+  featureCapscount=0;
         inreplytocount=0;
         passertedidcount=0;
         ppreferredidcount=0;
@@ -1663,7 +1692,7 @@ void initcounters(){
         proxyreqcount=0;
         reasoncount=0;
         recroutecount=0;
-	recvinfocount=0;
+  recvinfocount=0;
         routecount=0;
         reqcount=0;
         suppcount=0;

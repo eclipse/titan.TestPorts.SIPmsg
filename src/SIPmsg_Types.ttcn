@@ -18,7 +18,7 @@
 ******************************************************************************/
 //
 //  File:               SIPmsg_Types.ttcn
-//  Rev:                R12D
+//  Rev:                R14A
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -59,6 +59,9 @@ module SIPmsg_Types
   external function f_SIP_decode_binary(in octetstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled, in SIPmsg_body_handling_modes body_mode:=tsp_SIPmsg_binary_body_mode) return PDU_SIP;
   external function f_SIP_decode_fragment(in charstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled) 
     return PDU_SIP_Fragment;
+
+  external function f_SIP_decode_backtrack(in charstring pdu, out PDU_SIP msg,in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled)
+  external function f_SIP_decode_binary_backtrack(in octetstring pdu, out PDU_SIP msg, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled, in SIPmsg_body_handling_modes body_mode:=tsp_SIPmsg_binary_body_mode)
     
   const MessageHeader c_SIP_msgHeader_empty :=
   { 
@@ -116,6 +119,7 @@ module SIPmsg_Types
     p_DCS_redirect        := omit,
     p_DCS_trace_pty_id    := omit,
     p_Early_Media         := omit,
+    p_last_access_network_info := omit,
     p_media_auth          := omit,
     p_visited_network_id  := omit,
     passertedID           := omit,
@@ -241,6 +245,7 @@ module SIPmsg_Types
     p_DCS_LAES := *,
     p_DCS_redirect := *,
     p_Early_Media := *,
+    p_last_access_network_info := *,
     p_media_auth := *,
     ppreferredID := *,
     p_preferred_service := *, 
@@ -315,7 +320,7 @@ group AdressTypes
     boolean         tcporudp optional  // true if TCP false if UDP
   }
   
-  type enumerated SIP_com_prot{UNCHANGED_E,TCP_E,UDP_E,SCTP_E}
+  type enumerated SIP_com_prot{UNCHANGED_E,TCP_E,UDP_E,SCTP_E, TLS_E}
 
   type record SIP_comm_adress
   {
@@ -410,6 +415,7 @@ group Types
         P_DCS_LAES_E,  // RFC3603
         P_DCS_REDIRECT_E,  // RFC3603
         P_EARLY_MEDIA_E,   // RFC5009
+        P_LAST_ACCESS_NETWORK_INFO,  // T-Mobile specific
         P_MEDIA_AUTH_E,   // RFC3313
         P_PREFERRED_ID_E,
 	P_PREFERRED_SERVICE_E, // RFC 6050
@@ -1283,6 +1289,13 @@ group Types
         Em_param_List       em_param_list optional
       }
 
+      // T-Mobile specific
+      // "Similar to P-Last-Access-Network-Info"
+      type record P_Last_Access_Network_Info
+      {
+        FieldName             fieldName (P_LAST_ACCESS_NETWORK_INFO),
+        Access_net_spec_list  access_net_specs
+      }           
 
       // RFC3313
       type record P_Media_Auth
@@ -1778,6 +1791,7 @@ group Types
         P_DCS_LAES              p_DCS_LAES optional,
         P_DCS_redirect          p_DCS_redirect optional,
         P_Early_Media           p_Early_Media optional,
+        P_Last_Access_Network_Info   p_last_access_network_info optional,
         P_Media_Auth            p_media_auth optional,
         P_Preferred_Identity    ppreferredID optional,
 	P_Preferred_Service     p_preferred_service optional,
@@ -1942,5 +1956,5 @@ group Types
     }
   }// end group MSGTypes
 }// end group Types
-}with {extension "version R12D"}
+}with {extension "version R14A"}
 

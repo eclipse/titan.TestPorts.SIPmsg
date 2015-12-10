@@ -18,7 +18,7 @@
 ******************************************************************************/
 //
 //  File:               SIPmsg_PT.cc
-//  Rev:                R12D
+//  Rev:                R14A
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323,
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -76,7 +76,7 @@ inline static MessageHeader *newMsgHdr() {
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
-    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE
   );
   return headerptr;
 }
@@ -85,6 +85,7 @@ extern char myinput[BUF_SIZE];
 extern RequestLine *rqlineptr;
 extern StatusLine *stlineptr;
 extern MessageHeader *headerptr;
+extern PDU__SIP *msgptr;
 extern int num_chars;
 extern int errorind_loc;
 extern int erro_handling_sip_parser;
@@ -753,6 +754,7 @@ void SIPmsg__PT::decode_messages(
 
     rqlineptr=NULL;
     stlineptr=NULL;
+    msgptr=NULL;
     headerptr= newMsgHdr();
     num_chars=0;
     if (debug) {
@@ -2245,6 +2247,22 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
 
+  if (header->p__last__access__network__info().ispresent()){     // P-Access-Network-Info header
+    write_to_buff(buff,m_size,b_size, "P-Last-Access-Network-Info:");
+    const Access__net__spec__list *listptr=
+                                & header->p__last__access__network__info()().access__net__specs();
+    int paramnum=listptr->size_of();
+    header_sep=!m_header?",":"\r\nP-Last-Access-Network-Info:";
+    for(int a=0;a<paramnum;a++){
+      if(a){write_to_buff(buff,m_size,b_size, header_sep);}
+      write_to_buff(buff,m_size,b_size, (*listptr)[a].access__type());
+      if((*listptr)[a].access__info().ispresent()){
+          const char *atm[]={";",";","","="};
+          print_list(buff,m_size,b_size,& (*listptr)[a].access__info()(), atm );          
+      }     
+    }    
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
 
   if (header->ppreferredID().ispresent()){     // P_Preferred_Identity header
     const Identity__List *listptr=
@@ -3875,157 +3893,109 @@ OCTETSTRING f__SIP__encode__formatted__binary(const PDU__SIP& pdu, const BOOLEAN
 
 PDU__SIP f__SIP__decode(const CHARSTRING& pdu, const BOOLEAN& ipv6enabled, const BOOLEAN& wildcarded__uri){
   PDU__SIP ret_val;
+  f__SIP__decode__backtrack(pdu,ret_val,ipv6enabled,wildcarded__uri);
+  return ret_val;
+}
+
+void f__SIP__decode__backtrack(const CHARSTRING& pdu, PDU__SIP& msg, const BOOLEAN& ipv6enabled, const BOOLEAN& wildcarded__uri){
   rqlineptr=NULL;
   stlineptr=NULL;
-  headerptr= newMsgHdr();
+  msgptr=&msg;
 
   num_chars=0;
   erro_handling_sip_parser=1;
   errorind_loc=7;   // 111
   wildcarded_enabled_parser=wildcarded__uri;
   parsing((const char*)pdu,pdu.lengthof(),ipv6enabled);
-//  SIP_parse_debug=0;
-//  SIP_parse_parse();  // also sets appropriate fields of msg through pointers..
   if(errorind_loc){
-    delete rqlineptr;
-    delete stlineptr;
-    ret_val.raw()=pdu;
+    msg.raw()=pdu;
   } else if(rqlineptr!=NULL){
-    ret_val.request().requestLine()=*rqlineptr;
-    ret_val.request().msgHeader()=*headerptr;
-    if(pdu.lengthof()>num_chars) ret_val.request().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)pdu + num_chars);
-    else ret_val.request().messageBody()=OMIT_VALUE;
-    ret_val.request().payload()=OMIT_VALUE;
-    delete rqlineptr;
+    if(pdu.lengthof()>num_chars) msg.request().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)pdu + num_chars);
+    else msg.request().messageBody()=OMIT_VALUE;
+    msg.request().payload()=OMIT_VALUE;
   }
   else if(stlineptr!=NULL){
-    ret_val.response().statusLine()=*stlineptr;
-    ret_val.response().msgHeader()=*headerptr;
-    if(pdu.lengthof()>num_chars) ret_val.response().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)pdu + num_chars);
-    else ret_val.response().messageBody()=OMIT_VALUE;
-    ret_val.response().payload()=OMIT_VALUE;
-    delete stlineptr;
+    if(pdu.lengthof()>num_chars) msg.response().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)pdu + num_chars);
+    else msg.response().messageBody()=OMIT_VALUE;
+    msg.response().payload()=OMIT_VALUE;
   }
-  delete headerptr;
-  return ret_val;
+  return;
 }
-
 
 PDU__SIP f__SIP__decode__binary(const OCTETSTRING& pdu, const BOOLEAN& ipv6enabled, const BOOLEAN& wildcarded__uri, const SIPmsg__body__handling__modes& body__mode){
   PDU__SIP ret_val;
+  f__SIP__decode__binary__backtrack(pdu,ret_val,ipv6enabled,wildcarded__uri,body__mode);
+  return ret_val;
+}
+
+void f__SIP__decode__binary__backtrack(const OCTETSTRING& pdu, PDU__SIP& msg, const BOOLEAN& ipv6enabled, const BOOLEAN& wildcarded__uri, const SIPmsg__body__handling__modes& body__mode){
   rqlineptr=NULL;
   stlineptr=NULL;
-  headerptr= newMsgHdr();
+  msgptr=&msg;
+  
+  OPTIONAL<CHARSTRING>* bodyptr=NULL;
+  OPTIONAL<Payload>* payloadptr=NULL;
 
   num_chars=0;
   erro_handling_sip_parser=1;
   errorind_loc=7;   // 111
   wildcarded_enabled_parser=wildcarded__uri;
   parsing((const char*)(const unsigned char*)pdu,pdu.lengthof(),ipv6enabled);
-//  SIP_parse_debug=0;
-//  SIP_parse_parse();  // also sets appropriate fields of msg through pointers..
   if(errorind_loc){
-    delete rqlineptr;
-    delete stlineptr;
-    ret_val.raw()=CHARSTRING(pdu.lengthof(),(const char*)(const unsigned char*)pdu);
+    msg.raw()=CHARSTRING(pdu.lengthof(),(const char*)(const unsigned char*)pdu);
+    return;
   } else if(rqlineptr!=NULL){
-    ret_val.request().requestLine()=*rqlineptr;
-    ret_val.request().msgHeader()=*headerptr;
-    if(pdu.lengthof()>num_chars){
-      switch(body__mode){
-        case 0:
-          ret_val.request().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-          ret_val.request().payload()=OMIT_VALUE;
-          break;
-        case 1:
-          {
-            bool binary_char=false;
-            int a=0;
-            int payload_len=pdu.lengthof()-num_chars;
-            const unsigned char* pdu_ptr=(const unsigned char*)pdu + num_chars;
-            while(a<payload_len && !binary_char){
-              binary_char= !pdu_ptr[a] || (pdu_ptr[a] & (const unsigned char)0x80);
-              a++;
-            }
-            if(binary_char){
-              ret_val.request().messageBody()=OMIT_VALUE;
-              ret_val.request().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-            }
-            else{
-              ret_val.request().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-              ret_val.request().payload()=OMIT_VALUE;
-            }
-          }
-          break;
-        case 2:
-          ret_val.request().messageBody()=OMIT_VALUE;
-          ret_val.request().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-          break;
-        case 3:
-          ret_val.request().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-          ret_val.request().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-          break;
-        default:
-          break;
-      }
-      
-    }
-    else {
-      ret_val.request().messageBody()=OMIT_VALUE;
-      ret_val.request().payload()=OMIT_VALUE;
-    }
-    delete rqlineptr;
+    bodyptr = &(msg.request().messageBody());
+    payloadptr = &(msg.request().payload());
   }
   else if(stlineptr!=NULL){
-    ret_val.response().statusLine()=*stlineptr;
-    ret_val.response().msgHeader()=*headerptr;
-    if(pdu.lengthof()>num_chars){
-      switch(body__mode){
-        case 0:
-          ret_val.response().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-          ret_val.response().payload()=OMIT_VALUE;
-          break;
-        case 1:
-          {
-            bool binary_char=false;
-            int a=0;
-            int payload_len=pdu.lengthof()-num_chars;
-            const unsigned char* pdu_ptr=(const unsigned char*)pdu + num_chars;
-            while(a<payload_len && !binary_char){
-              binary_char= !pdu_ptr[a] || (pdu_ptr[a] & (const unsigned char)0x80);
-              a++;
-            }
-            if(binary_char){
-              ret_val.response().messageBody()=OMIT_VALUE;
-              ret_val.response().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-            }
-            else{
-              ret_val.response().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-              ret_val.response().payload()=OMIT_VALUE;
-            }
-          }
-          break;
-        case 2:
-          ret_val.response().messageBody()=OMIT_VALUE;
-          ret_val.response().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-          break;
-        case 3:
-          ret_val.response().messageBody()=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
-          ret_val.response().payload()().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
-          break;
-        default:
-          break;
-      }
-      
-    }
-    else {
-      ret_val.response().messageBody()=OMIT_VALUE;
-      ret_val.response().payload()=OMIT_VALUE;
-    }
-    delete stlineptr;
+    bodyptr = &(msg.response().messageBody());
+    payloadptr = &(msg.response().payload());
   }
-  delete headerptr;
-  return ret_val;
+  if(pdu.lengthof()>num_chars){
+    switch(body__mode){
+      case 0:
+        *bodyptr=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
+        *payloadptr=OMIT_VALUE;
+        break;
+      case 1:
+        {
+          bool binary_char=false;
+          int a=0;
+          int payload_len=pdu.lengthof()-num_chars;
+          const unsigned char* pdu_ptr=(const unsigned char*)pdu + num_chars;
+          while(a<payload_len && !binary_char){
+            binary_char= !pdu_ptr[a] || (pdu_ptr[a] & (const unsigned char)0x80);
+            a++;
+          }
+          if(binary_char){
+            *bodyptr=OMIT_VALUE;
+            (*payloadptr)().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
+          }
+          else{
+            *bodyptr=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
+            *payloadptr=OMIT_VALUE;
+          }
+        }
+        break;
+      case 2:
+        *bodyptr=OMIT_VALUE;
+        *payloadptr=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
+        break;
+      case 3:
+        *bodyptr=CHARSTRING(pdu.lengthof()-num_chars, (const char*)(const unsigned char*)pdu + num_chars);
+        (*payloadptr)().payloadvalue()=OCTETSTRING(pdu.lengthof()-num_chars, (const unsigned char*)pdu + num_chars);
+        break;
+      default:
+        break;
+    }
+
+  }
+  else {
+    *bodyptr=OMIT_VALUE;
+    *payloadptr=OMIT_VALUE;
+  }
+  return;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4078,9 +4048,9 @@ CHARSTRING f__SIP__encode__fragment(const PDU__SIP__Fragment& pdu){
   return f__SIP__encode__fragment__formatted(pdu,false,false, true);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PDU__SIP__Fragment f__SIP__decode__fragment(const CHARSTRING& pdu, const BOOLEAN& ipv6enabled, const BOOLEAN& wildcarded__uri){
   PDU__SIP__Fragment ret_val;
+  msgptr=NULL;
   const char *data=(const char *)pdu;
   CHARSTRING pdu2="";
   while((*data)<' ' &&  (*data)>'\0') data++; // skip leading blank
