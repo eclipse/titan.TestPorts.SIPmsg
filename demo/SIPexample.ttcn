@@ -22,199 +22,178 @@ module SIPexample
   import from SIPmsg_PortType all;
   import from SIPexampleTemplates all;
   
-  modulepar charstring      PX_ETS_LOCAL_USER2;
-  modulepar charstring      PX_ETS_IPADDR2;
-  modulepar integer      PX_ETS_PORT2;
-  modulepar charstring      PX_ETS_LOCAL_USER;
-  modulepar charstring      PX_ETS_IPADDR;
-  modulepar integer      PX_ETS_PORT;
-  
-  modulepar float tsp_SIP_Perf_Encode_Duration := 10.0;
-  modulepar float tsp_SIP_Perf_Decode_Duration := 10.0;
-  
+  modulepar float tsp_SIP_Perf_Encode_Duration;
+  modulepar float tsp_SIP_Perf_Decode_Duration;
 
+  type component SipInterfaces
+  {
+    port SIPmsg_PT SYSPORT;
+  }
+  type component SIP_CT
+  {
+    port SIPmsg_PT PORT;
+  }
 
-      type component SipInterfaces
-      {
-          port SIPmsg_PT UDP1;
-      }
-      type component SIP_CT
-      {
-          port SIPmsg_PT UDP1C;
-      }
-
+  //This test requires a softphone client (e.g. Linphone). Download one and install it on your computer.
+  //Start the softphone program and configure it to listen on the port that you
+  //set in the configuration file (default port is 5060 in most of the softphone clients).
+  //Run this testcase, it will call the softphone client, answer the call.
+  //After 2 seconds the testcase will break the call.
+  /*PlantUML diagram:
+  @startuml
+  skinparam sequenceMessageAlign center
+  demo -> softphone : INVITE
+  ... messages until not 200 OK ...
+  demo <- softphone : 200 OK
+  demo -> softphone : ACK
+  ... 2 seconds ...
+  demo -> softphone : BYE
+  demo <- softphone : 200 OK
+  @enduml
+  */
   testcase MakeCall() runs on SIP_CT system SipInterfaces
   {
-  	timer T := 15.0;
-        timer T2:=1.0;
-//    var SIP_address_type DestAddr:= { host:=PX_ETS_IPADDR2,
-//                             portField:= PX_ETS_PORT2,
-//                             tcporudp:= false};
-//    var PDU_SIP_Response resp;
-    var PDU_SIP_Request reque:=valueof(INVITE_Request_s_1);
-    var ASP_SIP_Request asp_reque;
-    var ASP_SIP_open v_open;
-    var ASP_SIP_close v_close;
-//    var GenericParam_List gp:={};
-//    var charstring bd;
-/*      "v=0"& CRLF &
-      "o=- 3283847141 3283847141 IN IP4 " & PX_ETS_IPADDR & CRLF &
-      "s=-"& CRLF &
-      "c=IN IP4 "& PX_ETS_IPADDR & CRLF &
-      "t=0 0"& CRLF &
-      "m=audio 16384 RTP/AVP 8 0"& CRLF;
-*/
-    asp_reque.request:=reque;
-    asp_reque.addr:={ remote_host:= PX_ETS_IPADDR2,
-                      remote_port:= PX_ETS_PORT2,
-                      local_host:=omit,
-                      local_port:=omit,
-                      protocol:=UDP_E
-                    }
-  map(self:UDP1C,system:UDP1);
-//    var charstring ch:="SIP/2.0 100 Trying\r\nTo: Sinisa Marovic PSTN <sip:+00617040000000@164.48.133.21>\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 0\r\n\r\n"
-
-    log(asp_reque);
-    UDP1C.send(asp_reque) ;
-    T.start;
-    alt
-    {
-      [] UDP1C.receive(PDU_SIP_Request:*) -> value reque { log(reque);setverdict(pass);UDP1C.send(reque)}
-      [] UDP1C.receive(ASP_SIP_Request:*) -> value asp_reque { log(asp_reque);setverdict(pass);UDP1C.send(asp_reque)}
-      [] UDP1C.receive { setverdict(pass); }
-      [] T.timeout {setverdict(fail); stop;}
-    }
-    alt {
-      [] UDP1C.receive { setverdict(pass); }
-      [] T.timeout {setverdict(fail); stop;}
-    }
-    v_close.addr:=asp_reque.addr;
-    UDP1C.send(v_close);
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    asp_reque.addr:={ remote_host:= PX_ETS_IPADDR2,
-                      remote_port:= PX_ETS_PORT2,
-                      local_host:=omit,
-                      local_port:=omit,
-                      protocol:=TCP_E
-                    }
-   v_open.addr:=asp_reque.addr;
-/*
-    UDP1C.send(v_open);
-   UDP1C.send(ch)to DestAddr;
-    alt {
-      [] UDP1C.receive { setverdict(pass); }
-      [] T.timeout {setverdict(fail); stop;}
-    }
-    
-  }
-  testcase Raw_teszt() runs on SIP_CT system SipInterfaces
-  {
-    var charstring ch:="SIP/2.0 100 Trying\r\nTo: Sinisa Marovic PSTN <sip:+00617040000000@164.48.133.21>\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 12\r\n\r\nqwertyuiop[]"
-    var charstring ch2:="SIP/2.0 101 Trying\r\nTo: Sinisa Marovic PSTN <sip:+00617040000000@164.48.133.21>\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 12\r\n\r\n123456789123SIP/2.0 102 Trying\r\nTo: Sinisa Marovic PSTN <sip:+00617040000000@164.48.133.21>\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 12\r\n\r\nasdfghjklzxc"
-    var charstring ch3:="SIP/2.0 103 Trying\r\nTo: Sinisa Marovic PSTN <sip:+00617040000000@164.48.133.21>\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 12\r\n\r\nASDF"
-    var charstring ch4:="ZXCVGFDE"
-  	timer T := 150.0;
-    timer T2:=1.0;
-    var integer a:=0;
-    var ASP_SIP_Raw asp_raw;
-    asp_raw.raw:=ch;
-    asp_raw.addr:={ remote_host:= PX_ETS_IPADDR2,
-                      remote_port:= PX_ETS_PORT2,
-                      local_host:=omit,
-                      local_port:=omit,
-                      protocol:=TCP_E
-                    }
-    map(self:UDP1C,system:UDP1);
-    T.start;
-    UDP1C.send(asp_raw);
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    asp_raw.raw:=ch2;
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    UDP1C.send(asp_raw);
-    asp_raw.raw:=ch3;
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    UDP1C.send(asp_raw);
-    asp_raw.raw:=ch4;
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    UDP1C.send(asp_raw);
-   
-    alt
-    {
-      [] UDP1C.receive { a:=a+1; if(a<4) {repeat;} else {setverdict(pass);} }
-      [] T.timeout {setverdict(fail); stop;}
-    }*/
-    
-  }
-  testcase port_teszt() runs on SIP_CT system SipInterfaces
-  {
+  	timer T:=15.0;
+    timer T2:=2.0;
     var ASP_SIP_close v_close:={addr:={ remote_host:= omit,
                       remote_port:= omit,
                       local_host:=omit,
                       local_port:=omit,
-                      protocol:=TCP_E
+                      protocol:=UDP_E
                     }}
-    var ASP_SIP_open v_open:={addr:={ remote_host:= omit,
-                      remote_port:= omit,
-                      local_host:=omit,
-                      local_port:=55112,
-                      protocol:=TCP_E
+    var ASP_SIP_open v_open:={addr:={ remote_host:= PX_ETS_IPADDR2,
+                      remote_port:= PX_ETS_PORT2,
+                      local_host:=PX_ETS_IPADDR,
+                      local_port:=PX_ETS_PORT,
+                      protocol:=UDP_E
                     }}
-    var PDU_SIP_Request reque:=valueof(INVITE_Request_s_1);
+    var ASP_SIP_Response asp_resp;
+    var PDU_SIP_Response resp;
     var ASP_SIP_Request asp_reque;
-    timer T2:=5.0;
-    asp_reque.request:=reque;
-    asp_reque.addr:={ remote_host:= PX_ETS_IPADDR2,
-                      remote_port:= 55112,
+    var SIP_comm_adress addr:={ remote_host:= PX_ETS_IPADDR2,
+                      remote_port:= PX_ETS_PORT2,
                       local_host:=omit,
                       local_port:=omit,
-                      protocol:=TCP_E
-                    }
-    map(self:UDP1C,system:UDP1);
+                      protocol:=UDP_E
+                    };
+    var charstring toFieldTag:="";
+    asp_reque.request:=valueof(INVITE_Request_s_1);
+    asp_reque.addr:=addr;
+    map(self:PORT,system:SYSPORT);
+
+	//open UDP port
+	PORT.send(v_open);
     T2.start;
     alt{
       [] T2.timeout {}
     }
-    log("close UDP");
-    UDP1C.send(v_close);
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    log("open UDP");
-    UDP1C.send(v_open);
-    T2.start;
-    alt{
-      [] T2.timeout {}
-    }
-    log("send UDP");
-    UDP1C.send(asp_reque);
-   T2.start;
+
+	//first we send our INVITE SIP message to the other side
+    log("send INVITE on UDP");
+    PORT.send(asp_reque) ;
+    T.start;
+    //we wait for the 200 OK response, and we send back an ACK message
+    //if there is no 200 OK, than we set our verdict to fail and stop the process
     alt
     {
-      [] UDP1C.receive {setverdict(pass);}
-      [] T2.timeout {setverdict(fail); stop;}
+      [] PORT.receive(PDU_SIP_Response:*) -> value resp { 
+      	log(resp);
+		if(resp.statusLine.statusCode == 200){
+		  asp_reque.request:=valueof(ACK_Request_s_1);
+		  if(ispresent(resp.msgHeader.toField.toParams[0].paramValue)){
+		  	toFieldTag:=resp.msgHeader.toField.toParams[0].paramValue;
+		  }
+		  if(ispresent(resp.messageBody)){
+		    asp_reque.request.messageBody:=resp.messageBody;
+		    asp_reque.request.msgHeader.contentType:=resp.msgHeader.contentType;
+		    asp_reque.request.msgHeader.contentLength:=resp.msgHeader.contentLength;
+		  }
+		  asp_reque.addr:=addr;
+		  asp_reque.request.msgHeader.toField.toParams[0]:={
+		    id:="tag",
+		    paramValue:=toFieldTag
+		  };
+		  PORT.send(asp_reque);
+		  setverdict(pass);
+		}else{
+		  repeat;
+		}
+	  }
+      [] PORT.receive(ASP_SIP_Response:*) -> value asp_resp {
+        log(asp_resp);
+        if(asp_resp.response.statusLine.statusCode == 200){
+          asp_reque.request:=valueof(ACK_Request_s_1);
+          if(ispresent(asp_resp.response.msgHeader.toField.toParams[0].paramValue)){
+		  	toFieldTag:=asp_resp.response.msgHeader.toField.toParams[0].paramValue;
+		  }
+		  if(ispresent(asp_resp.response.messageBody)){
+		    asp_reque.request.messageBody:=asp_resp.response.messageBody;
+		    asp_reque.request.msgHeader.contentType:=asp_resp.response.msgHeader.contentType;
+		    asp_reque.request.msgHeader.contentLength:=asp_resp.response.msgHeader.contentLength;
+		  }
+		  asp_reque.addr:=addr;
+		  asp_reque.request.msgHeader.toField.toParams[0]:={
+		    id:="tag",
+		    paramValue:=toFieldTag
+		  };
+		  PORT.send(asp_reque);
+		  setverdict(pass);
+		}else{
+		  repeat;
+		}
+	  }  
+      [] PORT.receive { repeat; }
+      [] T.timeout {setverdict(fail); stop;}
     }
+    
+    //wait a little and send a BYE message
+    T2.start;
+    alt
+    {
+      [] T2.timeout { 
+        asp_resp.addr:=addr;
+		asp_reque.request:=valueof(BYE_Request_s_1);
+		asp_reque.request.msgHeader.toField.toParams[0]:={
+		  id:="tag",
+		  paramValue:=toFieldTag
+		};
+        PORT.send(asp_reque); 
+      }
+    }
+    
+    //wait for the 200 OK response
+    T.start;
+    alt
+    {
+      [] PORT.receive(PDU_SIP_Response:*) -> value resp { 
+      	log(resp);
+		if(resp.statusLine.statusCode == 200){
+		  setverdict(pass);
+		}else{
+		  repeat;
+		}
+	  }
+      [] PORT.receive(ASP_SIP_Response:*) -> value asp_resp {
+        log(asp_resp);
+        if(asp_resp.response.statusLine.statusCode == 200){
+          setverdict(pass);
+		}else{
+		  repeat;
+		}
+	  }  
+      [] PORT.receive { repeat; }
+      [] T.timeout {setverdict(fail); stop;}
+    }
+    
+    //close UDP port
+    PORT.send(v_close);
     T2.start;
     alt{
       [] T2.timeout {}
     }
-    
+    unmap(self:PORT,system:SYSPORT);
   }
+  
   testcase fv_teszt() runs on SIP_CT system SipInterfaces{
     var charstring ch:="INVITE sip:+00617040000000@164.48.133.21 SIP/2.0\r\nt: sip:+00617040000000@164.48.133.21\r\nFrom: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nP-Early-Media:\r\nP-Early-Media:\r\nP-Early-Media: sendrecv, token\r\nP-Early-Media:\r\nP-Early-Media: token2\r\nP-Early-Media:token3, token4\r\nCall-ID: 0.063312\r\nCSeq: 1 INVITE\r\nVia: SIP/2.0/TCP AQUIS195.ERICSSON.SE:5060;branch=z9hG4bK0.063312;received=164.48.130.58\r\nContent-Length: 12\r\n\r\nqwertyuiop[]"
     var PDU_SIP pdu:=f_SIP_decode(ch);
@@ -238,11 +217,8 @@ module SIPexample
 
   testcase encdec_teszt() runs on SIP_CT system SipInterfaces{
     var charstring ch:="INVITE sip:+12345![5-6]!@SIP.EDD.AACHEN.DE;user=phone SIP/2.0\r\nSession-ID:1234567890qwertyuiopasdfghjklzxc\r\nMax-Forwards: 70\r\nTo:tel:+12345![2-3]*!\r\nP-Asserted-Identity:sip:+33221120@SIP.ZAGREB.HR;user=phone\r\nRack: 1 4294967291 INVITE\r\nFrom:sip:+33221120@SIP.ZAGREB.HR;user=phone;tag=1295741737\r\nAccept: application/sdp\r\nAllow: INVITE,ACK,BYE,CANCEL\r\nContent-Type: application/sdp\r\nMIME-Version: 1.0\r\nCSeq: 1 INVITE\r\nCall-ID: XA007030315200809@SIP.ZAGREB.HR\r\nContact: <sip:+33221120@172.17.86.126>\r\nVia:SIP/2.0/UDP SIP.ZAGREB.HR;branch=z9hG4bk542740812\r\nP-Served-User: <sip:user@example.com>; sescase=orig; regstate=reg\r\nContent-Length:  236\r\nP-DCS-LAES: laes.valami.com:222 ; content =akarmi.com:11; content= akarmi.com; key=asja\r\nP-Profile-Key: <sip:chatroom-!.*!@example.com>\r\nP-User-Database: <aaa://host.example.com;transport=tcp>\r\n\r\nv=0\r\no=- 4686582 4686582 IN IP4 0.0.0.0\r\ns=-\r\na=sendrecv\r\nt=0 0\r\nm=audio 0 RTP/AVP 97 8\r\nc=IN IP4 0.0.0.0\r\na=rtpmap:97 AMR/8000\r\na=fmtp:97 mode-set=0,2,4,7mode-change-period=2mode-change-neighbor=1\r\na=rtpmap:8 PCMA/8000\r\na=maxptime:40\r\n"
-    //ch:="INVITE sip:B-TC_MMTCG_BMMT0240@ericsson.com SIP/2.0\r\nAllow:REGISTER,INVITE,ACK,BYE,CANCEL,OPTIONS,UPDATE,PRACK,REFER,NOTIFY,MESSAGE,SUBSCRIBE\r\nCall-ID:1215296015\r\nContact:sip:A-TC_MMTCG_BMMT0240@ericsson.com\r\nContent-Length:196\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:sip:A-TC_MMTCG_BMMT0240@ericsson.com;tag=896090230\r\nMax-Forwards:70\r\nMin-SE:900\r\nP-Asserted-Identity:sip:A-TC_MMTCG_BMMT0240@ericsson.com\r\nP-Charging-Function-Addresses:ccf=ccfRealm1.ericsson.se;ccf=ccfRealm2.ericsson.se\r\nP-Charging-Vector:icid-value=19336884;icid-generated-at=192.0.0.1;orig-ioi=cscfAIoi.com\r\nRecord-Route:<sip:192.168.73.1:5060;lr>\r\nRoute:<sip:192.168.83.100:5082;lr;msisdn=46123456>,<sip:192.168.73.1:5061;lr>\r\nSession-Expires:1800\r\nSupported:timer,100rel\r\nTo:sip:B-TC_MMTCG_BMMT0240@ericsson.com\r\nVia:SIP/2.0/UDP 192.168.73.1:5060;branch=z9hG4bK1269100804\r\nP-Access-Network-Info:3GPP-UTRAN-TDD;utran-cell-id-3gpp=1234567890ABC\r\nP-Access-Network-Info:3GPP-UTRAN-FDD;network-provided;utran-cell-id-3gpp=0987654321ABC\r\n\r\nv=0\r\no=user 971435633 1074066890 IN IP4 192.168.73.1\r\ns=-\r\ne=192.168.73.1@ericsson.se\r\nt=0 0\r\nm=audio 2100 RTP/AVP 0 2\r\nc=IN IP4 192.168.0.1\r\nb=AS:128\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:2 G721/8000\r\n";
-    //ch:="SIP/2.0 100 Trying\r\nCall-ID:1215296015\r\nContact:sip:p65537t1251361160m470682c4866s1@192.168.83.100:5082\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:sip:A-TC_MMTCG_BMMT0240@ericsson.com;tag=896090230\r\nSupported:timer\r\nTo:sip:B-TC_MMTCG_BMMT0240@ericsson.com;tag=p65537t1251361160m470682c4866s1_964161408-1\r\nVia:SIP/2.0/UDP 192.168.73.1:5060;branch=z9hG4bK1269100804\r\n\r\n";
     var PDU_SIP pdu;
     log(ch);
-//    pdu.request:=valueof(INVITE_Request_s_1);    
     pdu:=f_SIP_decode(ch);
     log(pdu);    
     ch:=f_SIP_encode(pdu);
@@ -260,7 +236,6 @@ module SIPexample
     var charstring ch:="INVITE sip:+00617040000000@164.48.133.21 SIP/2.0\r\nSession-ID:1234567890qwertyuiopasdfghjklzxc\r\nMax-Forwards: 70\r\nTo: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nAccept-Resource-Priority:dns.flash,dns.routine\r\nAccept-Resource-Priority:dns.flash2\r\nResource-Priority:dns.flash,dns.routine\r\nResource-Priority:dns.flash2\r\nRack: 1 4294967291 INVITE\r\nFrom:sip:+33221120@SIP.ZAGREB.HR;user=phone;tag=1295741737\r\nAccept: application/sdp\r\nAllow: INVITE,ACK,BYE,CANCEL\r\nContent-Type: application/sdp\r\nMIME-Version: 1.0\r\nCSeq: 1 INVITE\r\nCall-ID: XA007030315200809@SIP.ZAGREB.HR\r\nContact: <sip:+33221120@172.17.86.126>\r\nVia:SIP/2.0/UDP SIP.ZAGREB.HR;branch=z9hG4bk542740812\r\nP-Served-User: <sip:user@example.com>; sescase=orig; regstate=reg\r\nContent-Length:  236\r\nP-DCS-LAES: laes.valami.com:222 ; content =akarmi.com:11; content= akarmi.com; key=asja\r\nP-Profile-Key: <sip:chatroom-!.*!@example.com>\r\nP-User-Database: <aaa://host.example.com;transport=tcp>\r\n\r\nv=0\r\no=- 4686582 4686582 IN IP4 0.0.0.0\r\ns=-\r\na=sendrecv\r\nt=0 0\r\nm=audio 0 RTP/AVP 97 8\r\nc=IN IP4 0.0.0.0\r\na=rtpmap:97 AMR/8000\r\na=fmtp:97 mode-set=0,2,4,7mode-change-period=2mode-change-neighbor=1\r\na=rtpmap:8 PCMA/8000\r\na=maxptime:40\r\n"
     var PDU_SIP pdu;
     log(ch);
-//    pdu.request:=valueof(INVITE_Request_s_1);    
     pdu:=f_SIP_decode(ch);
     log(pdu);    
     ch:=f_SIP_encode(pdu);
@@ -289,7 +264,7 @@ module SIPexample
     } else {
       setverdict(pass);
     }
-}
+  }
 
   testcase HN25835() runs on SIP_CT system SipInterfaces{
     var charstring ch:="SIP/2.0 401 Unauthorized\r\nCall-ID:TTCN3314714000000@2607:F0D0:2001:000A:0000:0000:0000:0012\r\nCSeq:51656337 REGISTER\r\nFrom:sip:1300@[2607:f0d0:2001:a::09];tag=3005120\r\nTo:sip:1300@[2607:f0d0:2001:a::09];tag=05ac9eb768a5c50f2276eecfdefb5652.10a8\r\nVia:SIP/2.0/UDP [2607:F0D0:2001:000A:0000:0000:0000:0012]:5062;branch=z9hG4bK1407653T000000;received=2607:F0D0:2001:A:0:0:0:12\r\nWWW-Authenticate: Digest realm=\"[2607:f0d0:2001:a::09]\", nonce=\"TNlaHkzZWPJoyVue7LnKkK5Hv1RJqXnL\"\r\nServer: kamailio (3.1.0 (x86_64/linux))\r\nContent-Length: 0\r\n\r\n"
@@ -306,13 +281,13 @@ module SIPexample
     } else {
       setverdict(pass);
     }
-}
+  }
 
   testcase encdec_teszt_CR_TR00019031() runs on SIP_CT system SipInterfaces{
     var charstring ch:="INVITE sip:+00617040000000@164.48.133.21 SIP/2.0\r\nSession-ID:1234567890qwertyuiopasdfghjklzxc\r\nMax-Forwards: 70\r\nTo: Sinisa Marovic <sip:+4924075757835@AQUIS195.ERICSSON.SE>;tag=0.063312\r\nAccept-Resource-Priority:dns.flash,dns.routine\r\nAccept-Resource-Priority:dns.flash2\r\nResource-Priority:dns.flash,dns.routine\r\nResource-Priority:dns.flash2\r\nRack: 1 4294967291 INVITE\r\nFrom:sip:+33221120@SIP.ZAGREB.HR;user=phone;tag=1295741737\r\nAccept: application/sdp\r\nAllow: INVITE,ACK,BYE,CANCEL\r\nContent-Type: application/sdp\r\nMIME-Version: 1.0\r\nCSeq: 1 INVITE\r\nCall-ID: XA007030315200809@SIP.ZAGREB.HR\r\nContact: <sip:+33221120@172.17.86.126>\r\nVia:SIP/2.0/UDP SIP.ZAGREB.HR;branch=z9hG4bk542740812\r\nP-Served-User: <sip:user@example.com>; sescase=orig; regstate=reg\r\nP-Service-Notification: conference-established\r\nP-Service-Indication: CCBS\r\nContent-Length:  236\r\nP-DCS-LAES: laes.valami.com:222 ; content =akarmi.com:11; content= akarmi.com; key=asja\r\nP-Profile-Key: <sip:chatroom-!.*!@example.com>\r\nP-User-Database: <aaa://host.example.com;transport=tcp>\r\n\r\nv=0\r\no=- 4686582 4686582 IN IP4 0.0.0.0\r\ns=-\r\na=sendrecv\r\nt=0 0\r\nm=audio 0 RTP/AVP 97 8\r\nc=IN IP4 0.0.0.0\r\na=rtpmap:97 AMR/8000\r\na=fmtp:97 mode-set=0,2,4,7mode-change-period=2mode-change-neighbor=1\r\na=rtpmap:8 PCMA/8000\r\na=maxptime:40\r\n"
     var PDU_SIP pdu;
-    log(ch);
-//    pdu.request:=valueof(INVITE_Request_s_1);    
+    
+    log(ch);   
     pdu:=f_SIP_decode(ch);
     log(pdu);    
     ch:=f_SIP_encode(pdu);
@@ -324,7 +299,7 @@ module SIPexample
     } else {
       setverdict(pass);
     }
-}
+  }
 
 type record of PDU_SIP PDU_SIP_List;
 
@@ -429,7 +404,7 @@ const PDU_SIP_List cg_pdu_100s := {
   return charstring
   {
     var PDU_SIP vl_pdu;
-    vl_pdu.request := valueof(INVITE_Request_s_1);
+    vl_pdu.request := valueof(NOTIFY_Request_s_2);
     
     return f_SIP_encode(vl_pdu);
   }
@@ -438,7 +413,7 @@ const PDU_SIP_List cg_pdu_100s := {
   return PDU_SIP
   {
     var PDU_SIP vl_pdu;
-    vl_pdu.request := valueof(INVITE_Request_s_1);
+    vl_pdu.request := valueof(NOTIFY_Request_s_2);
     
     return vl_pdu;
   }
@@ -553,7 +528,7 @@ const PDU_SIP_List cg_pdu_100s := {
     var boolean vl_loop := true;
 	var integer vl_cnt := 0;
 
-    vl_pdu.request := valueof(INVITE_Request_s_1);
+    vl_pdu.request := valueof(NOTIFY_Request_s_2);
      
     timer TL_ellapsed := pl_duration;
     TL_ellapsed.start;
@@ -594,7 +569,7 @@ const PDU_SIP_List cg_pdu_100s := {
     
     // NOTIFY
     vt_pdu := {
-      request := INVITE_Request_s_1
+      request := NOTIFY_Request_s_2
     };
     vl_raw := f_SIP_encode(valueof(vt_pdu));
     vl_pdu_decoded := f_SIP_decode(vl_raw, true);
@@ -611,7 +586,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_INVITEs[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -625,7 +599,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_REGISTERs[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -639,7 +612,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_ACKs[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -653,7 +625,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_BYEs[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -667,7 +638,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_100s[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -681,7 +651,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_180s[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -695,7 +664,6 @@ const PDU_SIP_List cg_pdu_100s := {
       vt_pdu := cg_pdu_200s[i];
       vl_raw := f_SIP_encode(valueof(vt_pdu));
       vl_pdu_decoded := f_SIP_decode(vl_raw, true);
-//      vt_pdu.request.msgHeader.contentLength := *;
       vl_b := match(vl_pdu_decoded, vt_pdu);
       if (not vl_b) {
         log("PDU          : ", vt_pdu);
@@ -715,7 +683,6 @@ const PDU_SIP_List cg_pdu_100s := {
   }
   
   function f_SIP_Perf_Dec(in float pl_duration) {
-
     setverdict(pass);
     f_SIP_Perf_checkEncDec();
     var float vl_INVITE_dec := 0.0;
@@ -778,7 +745,7 @@ const PDU_SIP_List cg_pdu_100s := {
     }
     
     var integer vl_last := 0;
-    if (isvalue(pl_list[i].pdus)) {
+    if (sizeof(pl_list) > i and isvalue(pl_list[i].pdus)) {
       vl_last := sizeof(pl_list[i].pdus);
     }
     
@@ -790,11 +757,10 @@ const PDU_SIP_List cg_pdu_100s := {
   function f_SIP_Perf_Analize_Messages()
   return EPTF_SIP_SIP_Msg_List {
     var PDU_SIP vt_pdu;
-//    var charstring vl_raw;
     var EPTF_SIP_SIP_Msg_List vl_ret := {};
     
     // NOTIFY
-    vt_pdu.request := valueof(INVITE_Request_s_1)
+    vt_pdu.request := valueof(NOTIFY_Request_s_2)
     f_SIP_Perf_Add_Message(vl_ret, vt_pdu);
     
     // INVITE
@@ -894,6 +860,7 @@ const PDU_SIP_List cg_pdu_100s := {
       var float vl_speed := f_SIP_Perf_EncDec_general_enc(vl_msgs[i].pdus, vl_duration/int2float(sizeof(vl_msgs)));
       log("Len ",vl_msgs[i].len," encode:  ", vl_speed, " 1/s");
     }
+    setverdict(pass);
   }
 
   testcase tc_SIP_Perf_Dec_By_MsgLen()
@@ -906,259 +873,253 @@ const PDU_SIP_List cg_pdu_100s := {
       var float vl_speed := f_SIP_Perf_EncDec_general_dec(vl_msgs[i].pdus, vl_duration/int2float(sizeof(vl_msgs)));
       log("Len ",vl_msgs[i].len," decode:  ", vl_speed, " 1/s");
     }
+    setverdict(pass);
   }
-  
   
   testcase tc_decodeconstants()
   runs on SIP_CT
   {
-const charstring cl_msg_0 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=40\r\nContent-Length:0\r\nCSeq:938661025 REGISTER\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=5181480\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6723395T000000\r\n\r\n";
-log(f_SIP_decode(cl_msg_0, true));
-const charstring cl_msg_1 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=40\r\nContent-Length:0\r\nCSeq:1780030354 REGISTER\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=7591300\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK7697783T000000\r\n\r\n";
-log(f_SIP_decode(cl_msg_1, true));
-const charstring cl_msg_2 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6723395T000000\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045b6f520972085863f6911\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=5181480\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661025 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=40\r\nP-Associated-Uri: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465903>\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_2, true));
-const charstring cl_msg_3 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK7697783T000000\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046ec7870972085864c0d3e\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=7591300\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030354 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=40\r\nP-Associated-Uri: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465905>\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_3, true));
-const charstring cl_msg_4 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1132358719 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_4, true));
-const charstring cl_msg_5 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e830fd34d838dc3cc24096279b2a932d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1463648050 2415716364 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1336 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_5, true));
-const charstring cl_msg_6 := "SIP/2.0 100 Trying\r\nCall-ID:2415716433-522303726\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_6, true));
-const charstring cl_msg_7 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_7, true));
-const charstring cl_msg_8 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358719 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_8, true));
-const charstring cl_msg_9 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_9, true));
-const charstring cl_msg_10 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_10, true));
-const charstring cl_msg_11 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_11, true));
-const charstring cl_msg_12 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
-log(f_SIP_decode(cl_msg_12, true));
-const charstring cl_msg_13 := "SIP/2.0 200 OK\r\nCall-ID:2415716433-522303726\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_13, true));
-const charstring cl_msg_14 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358719 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e830fd34d838dc3cc24096279b2a932d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1421560351 2425758746 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1334 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_14, true));
-const charstring cl_msg_15 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContent-Length:0\r\nCSeq:1132358719 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5480734T000001\r\n\r\n";
-log(f_SIP_decode(cl_msg_15, true));
-const charstring cl_msg_16 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ildq5owiuxgvn7dnt4yyp2p5oj\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_16, true));
-const charstring cl_msg_17 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContent-Length:0\r\nCSeq:1132358720 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8326206T000002\r\n\r\n";
-log(f_SIP_decode(cl_msg_17, true));
-const charstring cl_msg_18 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i6pqs93gxydchhds61cot7df58\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_18, true));
-const charstring cl_msg_19 := "SIP/2.0 200 OK\r\nCall-ID:2415716433-522303726\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i6pqs93gxydchhds61cot7df58\r\n\r\n";
-log(f_SIP_decode(cl_msg_19, true));
-const charstring cl_msg_20 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8326206T000002\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358720 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_20, true));
-const charstring cl_msg_21 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_21, true));
-const charstring cl_msg_22 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e730ff34db38dc3cc2409527982a9a2d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1622303681 2427729309 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1340 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_22, true));
-const charstring cl_msg_23 := "SIP/2.0 100 Trying\r\nCall-ID:2427729377-582400364\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_23, true));
-const charstring cl_msg_24 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_24, true));
-const charstring cl_msg_25 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830184 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_25, true));
-const charstring cl_msg_26 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_26, true));
-const charstring cl_msg_27 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_27, true));
-const charstring cl_msg_28 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_28, true));
-const charstring cl_msg_29 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
-log(f_SIP_decode(cl_msg_29, true));
-const charstring cl_msg_30 := "SIP/2.0 200 OK\r\nCall-ID:2427729377-582400364\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_30, true));
-const charstring cl_msg_31 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830184 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e730ff34db38dc3cc2409527982a9a2d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 2124997959 2437766068 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1338 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_31, true));
-const charstring cl_msg_32 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContent-Length:0\r\nCSeq:2128830184 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6375769T000003\r\n\r\n";
-log(f_SIP_decode(cl_msg_32, true));
-const charstring cl_msg_33 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ido18hppndet3udv5dq1dgtfz1\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_33, true));
-const charstring cl_msg_34 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContent-Length:0\r\nCSeq:2128830185 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK737290T000004\r\n\r\n";
-log(f_SIP_decode(cl_msg_34, true));
-const charstring cl_msg_35 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i1gt1uq3sq6uy12cuy99xwvnw2\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_35, true));
-const charstring cl_msg_36 := "SIP/2.0 200 OK\r\nCall-ID:2427729377-582400364\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i1gt1uq3sq6uy12cuy99xwvnw2\r\n\r\n";
-log(f_SIP_decode(cl_msg_36, true));
-const charstring cl_msg_37 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK737290T000004\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830185 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_37, true));
-const charstring cl_msg_38 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1893517227 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_38, true));
-const charstring cl_msg_39 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e930fd34d838dc3cc2409a279e2a972d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1879944689 2439738600 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1344 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_39, true));
-const charstring cl_msg_40 := "SIP/2.0 100 Trying\r\nCall-ID:2439738664-681284072\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_40, true));
-const charstring cl_msg_41 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_41, true));
-const charstring cl_msg_42 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517227 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_42, true));
-const charstring cl_msg_43 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_43, true));
-const charstring cl_msg_44 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_44, true));
-const charstring cl_msg_45 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_45, true));
-const charstring cl_msg_46 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=3600\r\nContent-Length:0\r\nCSeq:938661026 REGISTER\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=557500\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8289992T000006\r\n\r\n";
-log(f_SIP_decode(cl_msg_46, true));
-const charstring cl_msg_47 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=3600\r\nContent-Length:0\r\nCSeq:1780030355 REGISTER\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=1790110\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK6555023T000001\r\n\r\n";
-log(f_SIP_decode(cl_msg_47, true));
-const charstring cl_msg_48 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8289992T000006\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045baee90972085ff4fb566\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=557500\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661026 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=1890\r\nP-Associated-Uri: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465903>\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_48, true));
-const charstring cl_msg_49 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK6555023T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046f15060972085ff5c9ddb\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=1790110\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030355 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=1890\r\nP-Associated-Uri: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465905>\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_49, true));
-const charstring cl_msg_50 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
-log(f_SIP_decode(cl_msg_50, true));
-const charstring cl_msg_51 := "SIP/2.0 200 OK\r\nCall-ID:2439738664-681284072\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_51, true));
-const charstring cl_msg_52 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517227 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e930fd34d838dc3cc2409a279e2a972d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1681524988 2449776927 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1342 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
-log(f_SIP_decode(cl_msg_52, true));
-const charstring cl_msg_53 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContent-Length:0\r\nCSeq:1893517227 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6963539T000005\r\n\r\n";
-log(f_SIP_decode(cl_msg_53, true));
-const charstring cl_msg_54 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7idc3h5wd4vfglptoetj3l7rw8r\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_54, true));
-const charstring cl_msg_55 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContent-Length:0\r\nCSeq:1893517228 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK7520932T000007\r\n\r\n";
-log(f_SIP_decode(cl_msg_55, true));
-const charstring cl_msg_56 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i56m2bxzhfvrt4ttlx9fh3s7ul\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_56, true));
-const charstring cl_msg_57 := "SIP/2.0 200 OK\r\nCall-ID:2439738664-681284072\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i56m2bxzhfvrt4ttlx9fh3s7ul\r\n\r\n";
-log(f_SIP_decode(cl_msg_57, true));
-const charstring cl_msg_58 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK7520932T000007\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517228 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
-log(f_SIP_decode(cl_msg_58, true));
-const charstring cl_msg_59 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:*\r\nContent-Length:0\r\nCSeq:1780030356 REGISTER\r\nExpires:0\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=2740600\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK9441341T000002\r\n\r\n";
-log(f_SIP_decode(cl_msg_59, true));
-const charstring cl_msg_60 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:*\r\nContent-Length:0\r\nCSeq:938661027 REGISTER\r\nExpires:0\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4240450\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK1330283T000008\r\n\r\n";
-log(f_SIP_decode(cl_msg_60, true));
-const charstring cl_msg_61 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK9441341T000002\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046e9878097208613d50a22\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=2740600\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030356 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=0\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_61, true));
-const charstring cl_msg_62 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK1330283T000008\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045be032097208613d03b0f\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4240450\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661027 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=0\r\nContent-Length: 0\r\n\r\n";
-log(f_SIP_decode(cl_msg_62, true));
-const charstring cl_msg_63 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nP-Asserted-Service: urn:urn-7:3gpp-service.exampletelephony.version1,urn:urn-7:3gpp-service.exampletelephony.version1B\r\nRequire:100rel,3gpp-service.exampletelephony.version1B\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nP-Preferred-Service: urn:urn-7:3gpp-service.exampletelephony.version2,urn:urn-7:3gpp-service.exampletelephony.version2B\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n\r\n";
-log(f_SIP_decode(cl_msg_63, true));
-const charstring cl_msg_64 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nX-AUT: fd01fc06\r\nX-Carrier-Info: 02fb05fe03000560\r\nX-CHGDelay: fe\r\nP-Asserted-Service: urn:urn-7:3gpp-service.exampletelephony.version1,urn:urn-7:3gpp-service.exampletelephony.version1B\r\nRequire:100rel,3gpp-service.exampletelephony.version1B\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nP-Preferred-Service: urn:urn-7:3gpp-service.exampletelephony.version2,urn:urn-7:3gpp-service.exampletelephony.version2B\r\nP-Area-Info: ca=32000;area-info=areainfo1;area-id=areaid1;area-type=ma\r\nX-CHGInfo:fefc7d0e3132333435363738393031323334;0123456789abcdef\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n\r\n";
-log(f_SIP_decode(cl_msg_64, true));
+    const charstring cl_msg_0 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=40\r\nContent-Length:0\r\nCSeq:938661025 REGISTER\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=5181480\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6723395T000000\r\n\r\n";
+    log(f_SIP_decode(cl_msg_0, true));
+    const charstring cl_msg_1 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=40\r\nContent-Length:0\r\nCSeq:1780030354 REGISTER\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=7591300\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK7697783T000000\r\n\r\n";
+    log(f_SIP_decode(cl_msg_1, true));
+    const charstring cl_msg_2 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6723395T000000\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045b6f520972085863f6911\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=5181480\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661025 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=40\r\nP-Associated-Uri: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465903>\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_2, true));
+    const charstring cl_msg_3 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK7697783T000000\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046ec7870972085864c0d3e\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=7591300\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030354 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=40\r\nP-Associated-Uri: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465905>\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_3, true));
+    const charstring cl_msg_4 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1132358719 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_4, true));
+    const charstring cl_msg_5 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e830fd34d838dc3cc24096279b2a932d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1463648050 2415716364 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1336 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_5, true));
+    const charstring cl_msg_6 := "SIP/2.0 100 Trying\r\nCall-ID:2415716433-522303726\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_6, true));
+    const charstring cl_msg_7 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_7, true));
+    const charstring cl_msg_8 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358719 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_8, true));
+    const charstring cl_msg_9 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_9, true));
+    const charstring cl_msg_10 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_10, true));
+    const charstring cl_msg_11 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_11, true));
+    const charstring cl_msg_12 := "SIP/2.0 180 Ringing\r\nCall-ID:2415716433-522303726\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:212214508\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\n";
+    log(f_SIP_decode(cl_msg_12, true));
+    const charstring cl_msg_13 := "SIP/2.0 200 OK\r\nCall-ID:2415716433-522303726\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ijvf8nt4gloqbfno11cr1t73d7\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_13, true));
+    const charstring cl_msg_14 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5892004T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358719 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e830fd34d838dc3cc24096279b2a932d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1421560351 2425758746 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1334 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_14, true));
+    const charstring cl_msg_15 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContent-Length:0\r\nCSeq:1132358719 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5480734T000001\r\n\r\n";
+    log(f_SIP_decode(cl_msg_15, true));
+    const charstring cl_msg_16 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ildq5owiuxgvn7dnt4yyp2p5oj\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_16, true));
+    const charstring cl_msg_17 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3462630000000@10.251.64.1\r\nContent-Length:0\r\nCSeq:1132358720 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=7947090\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8326206T000002\r\n\r\n";
+    log(f_SIP_decode(cl_msg_17, true));
+    const charstring cl_msg_18 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i6pqs93gxydchhds61cot7df58\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nCall-ID: 2415716433-522303726\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_18, true));
+    const charstring cl_msg_19 := "SIP/2.0 200 OK\r\nCall-ID:2415716433-522303726\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m369283c32717242s1_2415716492-1150032924\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=9727050\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i6pqs93gxydchhds61cot7df58\r\n\r\n";
+    log(f_SIP_decode(cl_msg_19, true));
+    const charstring cl_msg_20 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8326206T000002\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237677m311202c32718158s1_2415655292-483516656\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=7947090\r\nCall-ID: TTCN3462630000000@10.251.64.1\r\nCSeq: 1132358720 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_20, true));
+    const charstring cl_msg_21 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_21, true));
+    const charstring cl_msg_22 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e730ff34db38dc3cc2409527982a9a2d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1622303681 2427729309 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1340 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_22, true));
+    const charstring cl_msg_23 := "SIP/2.0 100 Trying\r\nCall-ID:2427729377-582400364\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_23, true));
+    const charstring cl_msg_24 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_24, true));
+    const charstring cl_msg_25 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830184 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_25, true));
+    const charstring cl_msg_26 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_26, true));
+    const charstring cl_msg_27 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_27, true));
+    const charstring cl_msg_28 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_28, true));
+    const charstring cl_msg_29 := "SIP/2.0 180 Ringing\r\nCall-ID:2427729377-582400364\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:577635298\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\n";
+    log(f_SIP_decode(cl_msg_29, true));
+    const charstring cl_msg_30 := "SIP/2.0 200 OK\r\nCall-ID:2427729377-582400364\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7igc6wvjsmgcr4eyb4jojvheckw\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_30, true));
+    const charstring cl_msg_31 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830184 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e730ff34db38dc3cc2409527982a9a2d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 2124997959 2437766068 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1338 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_31, true));
+    const charstring cl_msg_32 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContent-Length:0\r\nCSeq:2128830184 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6375769T000003\r\n\r\n";
+    log(f_SIP_decode(cl_msg_32, true));
+    const charstring cl_msg_33 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ido18hppndet3udv5dq1dgtfz1\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_33, true));
+    const charstring cl_msg_34 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContent-Length:0\r\nCSeq:2128830185 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK737290T000004\r\n\r\n";
+    log(f_SIP_decode(cl_msg_34, true));
+    const charstring cl_msg_35 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i1gt1uq3sq6uy12cuy99xwvnw2\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nCall-ID: 2427729377-582400364\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_35, true));
+    const charstring cl_msg_36 := "SIP/2.0 200 OK\r\nCall-ID:2427729377-582400364\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m382027c32723312s1_2427729436-716250058\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=6622331\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i1gt1uq3sq6uy12cuy99xwvnw2\r\n\r\n";
+    log(f_SIP_decode(cl_msg_36, true));
+    const charstring cl_msg_37 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK737290T000004\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237689m312172c32726249s1_2427656882-1552982462\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=1685251\r\nCall-ID: TTCN3339453000001@10.251.64.1\r\nCSeq: 2128830185 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_37, true));
+    const charstring cl_msg_38 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1893517227 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRequire:100rel\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_38, true));
+    const charstring cl_msg_39 := "INVITE sip:titansim_user_7465905@10.251.64.2:15010;transport=udp SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 1 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nAccept-Contact: *;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nMin-Se: 900\r\nP-Asserted-Identity: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465903>\r\nRequire: 100rel\r\nSession-Expires: 1800\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e930fd34d838dc3cc2409a279e2a972d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1879944689 2439738600 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1344 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_39, true));
+    const charstring cl_msg_40 := "SIP/2.0 100 Trying\r\nCall-ID:2439738664-681284072\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_40, true));
+    const charstring cl_msg_41 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_41, true));
+    const charstring cl_msg_42 := "SIP/2.0 180 Ringing\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517227 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nRequire: 100rel\r\nRSeq: 2\r\nSupported: timer\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_42, true));
+    const charstring cl_msg_43 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_43, true));
+    const charstring cl_msg_44 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_44, true));
+    const charstring cl_msg_45 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_45, true));
+    const charstring cl_msg_46 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=3600\r\nContent-Length:0\r\nCSeq:938661026 REGISTER\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=557500\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8289992T000006\r\n\r\n";
+    log(f_SIP_decode(cl_msg_46, true));
+    const charstring cl_msg_47 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=3600\r\nContent-Length:0\r\nCSeq:1780030355 REGISTER\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=1790110\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK6555023T000001\r\n\r\n";
+    log(f_SIP_decode(cl_msg_47, true));
+    const charstring cl_msg_48 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK8289992T000006\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045baee90972085ff4fb566\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=557500\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661026 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=1890\r\nP-Associated-Uri: <sip:titansim_user_7465903@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465903>\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_48, true));
+    const charstring cl_msg_49 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK6555023T000001\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046f15060972085ff5c9ddb\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=1790110\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030355 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=1890\r\nP-Associated-Uri: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Associated-Uri: <tel:+4687465905>\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_49, true));
+    const charstring cl_msg_50 := "SIP/2.0 180 Ringing\r\nCall-ID:2439738664-681284072\r\nContact:<sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>\r\nContent-Length:0\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nRequire:100rel\r\nRSeq:987069172\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\n";
+    log(f_SIP_decode(cl_msg_50, true));
+    const charstring cl_msg_51 := "SIP/2.0 200 OK\r\nCall-ID:2439738664-681284072\r\nContact:sip:titansim_user_7465905@tcj.ics.se\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:1 INVITE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nRecord-Route:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7ikgc6p4o9mlv1oseurkrip3yrk\r\n\r\nv=0\r\no=titansim_user_7460905 0 0 IN IP4 10.252.128.2\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.2\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_51, true));
+    const charstring cl_msg_52 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5404040T000005\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517227 INVITE\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nRecord-Route: <sip:10.80.36.132;transport=udp;lr>\r\nP-Asserted-Identity: <sip:titansim_user_7465905@tcj.ics.se>\r\nP-Asserted-Identity: <tel:+4687465905>\r\nSession-Expires: 1800;refresher=uas\r\nSupported: timer\r\nContent-Type: application/sdp\r\nContent-Length: 145\r\nSession-ID: e930fd34d838dc3cc2409a279e2a972d\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\nv=0\r\no=- 1681524988 2449776927 IN IP4 10.80.36.132\r\ns=-\r\nt=0 0\r\nm=audio 1342 RTP/AVP 0\r\nc=IN IP4 10.80.38.182\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n";
+    log(f_SIP_decode(cl_msg_52, true));
+    const charstring cl_msg_53 := "ACK sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContent-Length:0\r\nCSeq:1893517227 ACK\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK6963539T000005\r\n\r\n";
+    log(f_SIP_decode(cl_msg_53, true));
+    const charstring cl_msg_54 := "ACK sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7idc3h5wd4vfglptoetj3l7rw8r\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 1 ACK\r\nContact: <sip:sgc_c@10.80.36.132;transport=udp>;+g.3gpp.icsi-ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel"";+g.3gpp.icsi_ref=""urn%3Aurn-xxx%3A3gpp-service.ims.icsi.mmtel""\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_54, true));
+    const charstring cl_msg_55 := "BYE sip:sgc_c@10.80.36.132;transport=udp SIP/2.0\r\nCall-ID:TTCN3896530000002@10.251.64.1\r\nContent-Length:0\r\nCSeq:1893517228 BYE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4647382\r\nMax-Forwards:70\r\nRoute:<sip:10.80.36.132;transport=udp;lr>\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK7520932T000007\r\n\r\n";
+    log(f_SIP_decode(cl_msg_55, true));
+    const charstring cl_msg_56 := "BYE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nMax-Forwards: 68\r\nVia: SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i56m2bxzhfvrt4ttlx9fh3s7ul\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nCall-ID: 2439738664-681284072\r\nCSeq: 2 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_56, true));
+    const charstring cl_msg_57 := "SIP/2.0 200 OK\r\nCall-ID:2439738664-681284072\r\nContent-Length:0\r\nCSeq:2 BYE\r\nFrom:<sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m382054c32727387s1_2439738718-910196390\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>;tag=410652\r\nVia:SIP/2.0/UDP 10.80.36.132:5060;branch=z9hG4bKg3Zqkv7i56m2bxzhfvrt4ttlx9fh3s7ul\r\n\r\n";
+    log(f_SIP_decode(cl_msg_57, true));
+    const charstring cl_msg_58 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK7520932T000007\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_p65541t1280237701m314673c32723211s1_2439659167-1910263514\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4647382\r\nCall-ID: TTCN3896530000002@10.251.64.1\r\nCSeq: 1893517228 BYE\r\nContent-Length: 0\r\nAllow: REGISTER, REFER, NOTIFY, SUBSCRIBE, UPDATE, PRACK, INVITE, ACK, OPTIONS, CANCEL, BYE\r\n\r\n";
+    log(f_SIP_decode(cl_msg_58, true));
+    const charstring cl_msg_59 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3538753000000@10.251.64.2\r\nContact:*\r\nContent-Length:0\r\nCSeq:1780030356 REGISTER\r\nExpires:0\r\nFrom:sip:titansim_user_7465905@tcj.ics.se;tag=2740600\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465905@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK9441341T000002\r\n\r\n";
+    log(f_SIP_decode(cl_msg_59, true));
+    const charstring cl_msg_60 := "REGISTER sip:tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3271519000000@10.251.64.1\r\nContact:*\r\nContent-Length:0\r\nCSeq:938661027 REGISTER\r\nExpires:0\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=4240450\r\nMax-Forwards:70\r\nTo:sip:titansim_user_7465903@tcj.ics.se\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK1330283T000008\r\n\r\n";
+    log(f_SIP_decode(cl_msg_60, true));
+    const charstring cl_msg_61 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.2:15010;branch=z9hG4bK9441341T000002\r\nTo: <sip:titansim_user_7465905@tcj.ics.se>;tag=h7g4Esbg_07d2a3b0046e9878097208613d50a22\r\nFrom: <sip:titansim_user_7465905@tcj.ics.se>;tag=2740600\r\nCall-ID: TTCN3538753000000@10.251.64.2\r\nCSeq: 1780030356 REGISTER\r\nContact: <sip:titansim_user_7465905@10.251.64.2:15010;transport=udp>;expires=0\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_61, true));
+    const charstring cl_msg_62 := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK1330283T000008\r\nTo: <sip:titansim_user_7465903@tcj.ics.se>;tag=h7g4Esbg_68fe6996045be032097208613d03b0f\r\nFrom: <sip:titansim_user_7465903@tcj.ics.se>;tag=4240450\r\nCall-ID: TTCN3271519000000@10.251.64.1\r\nCSeq: 938661027 REGISTER\r\nContact: <sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>;expires=0\r\nContent-Length: 0\r\n\r\n";
+    log(f_SIP_decode(cl_msg_62, true));
+    const charstring cl_msg_63 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nP-Asserted-Service: urn:urn-7:3gpp-service.exampletelephony.version1,urn:urn-7:3gpp-service.exampletelephony.version1B\r\nRequire:100rel,3gpp-service.exampletelephony.version1B\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nP-Preferred-Service: urn:urn-7:3gpp-service.exampletelephony.version2,urn:urn-7:3gpp-service.exampletelephony.version2B\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n\r\n";
+    log(f_SIP_decode(cl_msg_63, true));
+    const charstring cl_msg_64 := "INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nX-AUT: fd01fc06\r\nX-Carrier-Info: 02fb05fe03000560\r\nX-CHGDelay: fe\r\nP-Asserted-Service: urn:urn-7:3gpp-service.exampletelephony.version1,urn:urn-7:3gpp-service.exampletelephony.version1B\r\nRequire:100rel,3gpp-service.exampletelephony.version1B\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nP-Preferred-Service: urn:urn-7:3gpp-service.exampletelephony.version2,urn:urn-7:3gpp-service.exampletelephony.version2B\r\nP-Area-Info: ca=32000;area-info=areainfo1;area-id=areaid1;area-type=ma\r\nX-CHGInfo:fefc7d0e3132333435363738393031323334;0123456789abcdef\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n\r\n";
+    log(f_SIP_decode(cl_msg_64, true));
 
-    //local declarations
-setverdict(pass);    
-    //dynamic behavior
+    setverdict(pass);    
   }
  
-testcase TC_SIP2_CM_EGRZKIS() runs on SIP_CT{
-
-  var charstring vl_char := "From:<" & "sip:Cat11Domain1@bt.com" & ">\r\n\r\n";
-  log("### FW64> vl_char just before decode:", vl_char);
-  var PDU_SIP_Fragment vl_frag := f_SIP_decode_fragment(vl_char);
-  log(vl_frag);
-//  var PDU_SIP vl_pdu;
+  testcase TC_SIP2_CM_EGRZKIS() runs on SIP_CT{
+    var charstring vl_char := "From:<" & "sip:Cat11Domain1@bt.com" & ">\r\n\r\n";
+    var PDU_SIP_Fragment vl_frag;
+    
+    log("### FW64> vl_char just before decode:", vl_char);
+    vl_frag := f_SIP_decode_fragment(vl_char);
+    log(vl_frag);
  
-  vl_char := "From:<" & "tel:+8111123456789" & ">\r\n\r\n";
-  log("### FW64> vl_char just before decode:", vl_char);
-  vl_frag := f_SIP_decode_fragment(vl_char);
-  log(vl_frag);
-setverdict(pass);
-}
-
-testcase TC_WARNING() runs on SIP_CT{
-
-  var charstring vl_char := "SIP/2.0 480 Temporarily Unavailable\r\nVia: SIP/2.0/TCP [2001:1b70:8294:1481::4]:5060;branch=z9hG4bK236275105\r\nRecord-Route: <sip:[2001:1b70:8294:1481::4]:5060;lr>\r\nFrom: sip:A-TC_3PTY_ERNA0060@ericsson.com;tag=1141676666\r\nTo: sip:3ptyconference@3ptyfactory.operator.net;tag=p65543t1299948099m270268c751s1_3232699886-736538816\r\nCall-ID: 123774626\r\nCSeq: 1 INVITE\r\nSupported: timer\r\nContact: sip:p65543t1299948099m270268c751s1@[2001:1b70:8294:1420::6]:5082\r\nWarning: 399 [2001:1b70:8294:1420::6]:5082 \"Temporarily Unavailable\"\r\nServer: Ericsson MTAS - CXP9011263/5 R6D\r\nContent-Length: 0\r\n\r\n"
-  log("### FW64> vl_char just before decode:", vl_char);
-  var PDU_SIP vl_pdu := f_SIP_decode(vl_char);
-  log(vl_pdu);
-  if(ischosen(vl_pdu.raw)){
-    setverdict(fail);
-  } else {
-    setverdict(pass);
+    vl_char := "From:<" & "tel:+8111123456789" & ">\r\n\r\n";
+    log("### FW64> vl_char just before decode:", vl_char);
+    vl_frag := f_SIP_decode_fragment(vl_char);
+    log(vl_frag);
+  	setverdict(pass);
   }
-//  var PDU_SIP vl_pdu;
- 
 
-}
+  testcase TC_WARNING() runs on SIP_CT{
+    var charstring vl_char := "SIP/2.0 480 Temporarily Unavailable\r\nVia: SIP/2.0/TCP [2001:1b70:8294:1481::4]:5060;branch=z9hG4bK236275105\r\nRecord-Route: <sip:[2001:1b70:8294:1481::4]:5060;lr>\r\nFrom: sip:A-TC_3PTY_ERNA0060@ericsson.com;tag=1141676666\r\nTo: sip:3ptyconference@3ptyfactory.operator.net;tag=p65543t1299948099m270268c751s1_3232699886-736538816\r\nCall-ID: 123774626\r\nCSeq: 1 INVITE\r\nSupported: timer\r\nContact: sip:p65543t1299948099m270268c751s1@[2001:1b70:8294:1420::6]:5082\r\nWarning: 399 [2001:1b70:8294:1420::6]:5082 \"Temporarily Unavailable\"\r\nServer: Ericsson MTAS - CXP9011263/5 R6D\r\nContent-Length: 0\r\n\r\n"
+    var PDU_SIP vl_pdu;
+    log("### FW64> vl_char just before decode:", vl_char);
+    vl_pdu := f_SIP_decode(vl_char);
+    log(vl_pdu);
+    if(ischosen(vl_pdu.raw)){
+      setverdict(fail);
+    } else {
+      setverdict(pass);
+    }
+  }
 
-testcase TC_HQ40431() runs on SIP_CT{
-
-
+  testcase TC_HQ40431() runs on SIP_CT{
     var charstring ch:="INVITE sip:+12345@SIP.EDD.AACHEN.DE;user=phone SIP/2.0\r\nSession-ID:1234567890qwertyuiopasdfghjklzxc\r\nMax-Forwards: 70\r\nTo:sip:+12345@SIP.EDD.AACHEN.DE;user=phone\r\nFrom:sip:+33221120@SIP.ZAGREB.HR;user=phone;tag=1295741737\r\nContent-Type: application/sdp\r\nMIME-Version: 1.0\r\nCSeq: 1 INVITE\r\nCall-ID: XA007030315200809@SIP.ZAGREB.HR\r\nVia:SIP/2.0/UDP SIP.ZAGREB.HR;branch=z9hG4bk542740812\r\nContent-Length:  236\r\nP-DCS-Redirect: \"sip:+12345@SIP.EDD.AACHEN.DE;user=phone;valami=\"akarmi\"\";redirector-uri=\"ip:+12345@SIP.EDD.AACHEN.DE;user=phone\" ;count = 11\r\n\r\nv=0\r\no=- 4686582 4686582 IN IP4 0.0.0.0\r\ns=-\r\na=sendrecv\r\nt=0 0\r\nm=audio 0 RTP/AVP 97 8\r\nc=IN IP4 0.0.0.0\r\na=rtpmap:97 AMR/8000\r\na=fmtp:97 mode-set=0,2,4,7mode-change-period=2mode-change-neighbor=1\r\na=rtpmap:8 PCMA/8000\r\na=maxptime:40\r\n"
     var PDU_SIP pdu;
+    var octetstring v_oct;
+    
     log(ch);
     pdu:=f_SIP_decode(ch);
     log(pdu);    
-
+  
     pdu.request.payload.payloadvalue  :='02ff41020000'O;
     pdu.request.messageBody := omit;
+  
+    log(pdu)
+    v_oct := f_SIP_encode_binary(pdu);
+       
+    if(substr(v_oct,lengthof(v_oct)-6, 6) == '02ff41020000'O ){
+      setverdict(pass);
+    } else {
+      setverdict(fail);
+    }
+  }
 
-   log(pdu)
-   var octetstring v_oct := f_SIP_encode_binary(pdu);
-   //log(v_oct);
-     
-   if ( substr(v_oct,lengthof(v_oct)-6, 6) == '02ff41020000'O ){
-     setverdict(pass)
-   }    
-   else{
-    setverdict(fail)   
-   }
-}
-
-testcase TC_CR_TR00019868() runs on SIP_CT{
+  testcase TC_CR_TR00019868() runs on SIP_CT{
     var charstring ch:="INVITE sip:titansim_user_7465905@tcj.ics.se SIP/2.0\r\nCall-ID:TTCN3339453000001@10.251.64.1\r\nContact:<sip:titansim_user_7465903@10.251.64.1:15010;transport=udp>\r\nContent-Length:148\r\nContent-Type:application/sdp\r\nCSeq:2128830184 INVITE\r\nFrom:sip:titansim_user_7465903@tcj.ics.se;tag=1685251\r\nMax-Forwards:70\r\nX-AUT: fd01fc06\r\nX-FCI: AAAA\r\nX-Carrier-Info: 02fb05fe03000560\r\nX-CHGDelay: fe\r\nP-Asserted-Service: urn:urn-7:3gpp-service.exampletelephony.version1,urn:urn-7:3gpp-service.exampletelephony.version1B\r\nRequire:100rel,3gpp-service.exampletelephony.version1B\r\nTo:<sip:titansim_user_7465905@tcj.ics.se>\r\nP-Preferred-Service: urn:urn-7:3gpp-service.exampletelephony.version2,urn:urn-7:3gpp-service.exampletelephony.version2B\r\nP-Area-Info: ca=32000;area-info=areainfo1;area-id=areaid1;area-type=ma\r\nX-CHGInfo:fefc7d0e3132333435363738393031323334;0123456789abcdef\r\nVia:SIP/2.0/UDP 10.251.64.1:15010;branch=z9hG4bK5758470T000003\r\n\r\nv=0\r\no=titansim_user_7460903 0 0 IN IP4 10.252.128.1\r\ns=-\r\nt=0 0\r\nm=audio 15004 RTP/AVP 0\r\nc=IN IP4 10.252.128.1\r\na=rtpmap:0 PCMU/8000\r\na=sendrecv\r\n\r\n";
-
     var PDU_SIP pdu;
+    var charstring v_chr;
     log("###### charstring:")
     log(ch);
     pdu:=f_SIP_decode(ch);
     log("###### PDU:")
     log(pdu); 
-    
-    if(pdu.request.msgHeader.x_FCI.x_FCI_Value == 'AAAA'H){ setverdict(pass)}
-    else {setverdict(fail)};   
-
-   var charstring v_chr := f_SIP_encode(pdu);
-   log("###### encoded PDU:")
-   log(v_chr); 
-   
-   pdu:=f_SIP_decode(v_chr);     
-   if(pdu.request.msgHeader.x_FCI.x_FCI_Value == 'AAAA'H){ setverdict(pass)}
-    else {setverdict(fail)};  
-}
-testcase TC_PLANI() runs on SIP_CT{
-
-  var charstring vl_char := "SIP/2.0 480 Temporarily Unavailable\r\nVia: SIP/2.0/TCP [2001:1b70:8294:1481::4]:5060;branch=z9hG4bK236275105\r\nRecord-Route: <sip:[2001:1b70:8294:1481::4]:5060;lr>\r\nFrom: sip:A-TC_3PTY_ERNA0060@ericsson.com;tag=1141676666\r\nTo: sip:3ptyconference@3ptyfactory.operator.net;tag=p65543t1299948099m270268c751s1_3232699886-736538816\r\nCall-ID: 123774626\r\nCSeq: 1 INVITE\r\nSupported: timer\r\nContact: sip:p65543t1299948099m270268c751s1@[2001:1b70:8294:1420::6]:5082\r\nP-Last-Access-Network-Info: 3GPP-UTRAN-TDD; utran-cell-id-3gpp=310260a1b32704bcf; \"1996-12-19T16%3A39%3A57-08%3A00\" ; 1996-12-19T15%3A39%3A27%2E20-08%3A00 \r\nWarning: 399 [2001:1b70:8294:1420::6]:5082 \"Temporarily Unavailable\"\r\nServer: Ericsson MTAS - CXP9011263/5 R6D\r\nContent-Length: 0\r\n\r\n"
-  log("### FW64> vl_char just before decode:", vl_char);
-  var PDU_SIP vl_pdu := f_SIP_decode(vl_char);
-  log(vl_pdu);
-  if(ischosen(vl_pdu.raw)){
-    setverdict(fail);
-  } else {
-    setverdict(pass);
+      
+    if(pdu.request.msgHeader.x_FCI.x_FCI_Value == 'AAAA'H){ 
+      setverdict(pass);
+    } else {
+      setverdict(fail);
+    }   
+  
+    v_chr := f_SIP_encode(pdu);
+    log("###### encoded PDU:")
+    log(v_chr); 
+     
+    pdu:=f_SIP_decode(v_chr);     
+    if(pdu.request.msgHeader.x_FCI.x_FCI_Value == 'AAAA'H){
+      setverdict(pass);
+    } else {
+      setverdict(fail);
+    }  
   }
-//  var PDU_SIP vl_pdu;
- 
 
-}
-testcase TC_I() runs on SIP_CT{
-
-  var charstring vl_char := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.200.1.1:10000;branch=z9hG4bK2518265T000000\r\nTo: <sip:+46800000@system.test>;tag=h7g4Esbg_4183800\r\nFrom: <sip:+46800000@system.test>;tag=8651760\r\nCall-ID: TTCN3_6864_0_0@10.200.1.1\r\nCSeq: 798116647 REGISTER\r\nContact: <sip:+46800000@10.200.1.1:10000;transport=udp>;expires=180;+sip.instance=\"<urn:gsma:imei:12345678-000000-2>\";+g.3gpp.accesstype=\"cellular\"\r\nP-Associated-Uri: <sip:+46800000@system.test>\r\nP-Associated-Uri: <tel:+46800000>\r\nService-Route: <sip:10.21.0.4:5060;transport=udp;lr>\r\nContent-Length: 0\r\nFeature-Caps: *;+g.3gpp.atcf=\"<tel:+12345>\"\r\n\r\n"
-  log("### FW64> vl_char just before decode:", vl_char);
-  var PDU_SIP vl_pdu := f_SIP_decode(vl_char);
-  log(vl_pdu);
-  if(ischosen(vl_pdu.raw)){
-    setverdict(fail);
-  } else {
-    setverdict(pass);
+  testcase TC_PLANI() runs on SIP_CT{
+    var charstring vl_char := "SIP/2.0 480 Temporarily Unavailable\r\nVia: SIP/2.0/TCP [2001:1b70:8294:1481::4]:5060;branch=z9hG4bK236275105\r\nRecord-Route: <sip:[2001:1b70:8294:1481::4]:5060;lr>\r\nFrom: sip:A-TC_3PTY_ERNA0060@ericsson.com;tag=1141676666\r\nTo: sip:3ptyconference@3ptyfactory.operator.net;tag=p65543t1299948099m270268c751s1_3232699886-736538816\r\nCall-ID: 123774626\r\nCSeq: 1 INVITE\r\nSupported: timer\r\nContact: sip:p65543t1299948099m270268c751s1@[2001:1b70:8294:1420::6]:5082\r\nP-Last-Access-Network-Info: 3GPP-UTRAN-TDD; utran-cell-id-3gpp=310260a1b32704bcf; \"1996-12-19T16%3A39%3A57-08%3A00\" ; 1996-12-19T15%3A39%3A27%2E20-08%3A00 \r\nWarning: 399 [2001:1b70:8294:1420::6]:5082 \"Temporarily Unavailable\"\r\nServer: Ericsson MTAS - CXP9011263/5 R6D\r\nContent-Length: 0\r\n\r\n"
+    var PDU_SIP vl_pdu;
+    log("### FW64> vl_char just before decode:", vl_char);
+    vl_pdu := f_SIP_decode(vl_char);
+    log(vl_pdu);
+    if(ischosen(vl_pdu.raw)){
+      setverdict(fail);
+    } else {
+      setverdict(pass);
+    }
   }
-//  var PDU_SIP vl_pdu;
- 
 
-}
+  testcase TC_I() runs on SIP_CT{
+    var charstring vl_char := "SIP/2.0 200 OK\r\nVia: SIP/2.0/UDP 10.200.1.1:10000;branch=z9hG4bK2518265T000000\r\nTo: <sip:+46800000@system.test>;tag=h7g4Esbg_4183800\r\nFrom: <sip:+46800000@system.test>;tag=8651760\r\nCall-ID: TTCN3_6864_0_0@10.200.1.1\r\nCSeq: 798116647 REGISTER\r\nContact: <sip:+46800000@10.200.1.1:10000;transport=udp>;expires=180;+sip.instance=\"<urn:gsma:imei:12345678-000000-2>\";+g.3gpp.accesstype=\"cellular\"\r\nP-Associated-Uri: <sip:+46800000@system.test>\r\nP-Associated-Uri: <tel:+46800000>\r\nService-Route: <sip:10.21.0.4:5060;transport=udp;lr>\r\nContent-Length: 0\r\nFeature-Caps: *;+g.3gpp.atcf=\"<tel:+12345>\"\r\n\r\n"
+    var PDU_SIP vl_pdu;
+    log("### FW64> vl_char just before decode:", vl_char);
+    vl_pdu := f_SIP_decode(vl_char);
+    log(vl_pdu);
+    if(ischosen(vl_pdu.raw)){
+      setverdict(fail);
+    } else {
+      setverdict(pass);
+    }
+  }
  
   control
   {
     execute(MakeCall());
-    execute(port_teszt());
     execute(fv_teszt());
     execute(encdec_teszt());
     execute(encdec_teszt_CR_TR00018886());
@@ -1167,8 +1128,8 @@ testcase TC_I() runs on SIP_CT{
     execute(encdec_teszt_CR_TR00019031());
     execute(tc_SIP_Perf_Enc());
     execute(tc_SIP_Perf());
-    //execute(tc_SIP_Perf_Enc_By_MsgLen());
-    //execute(tc_SIP_Perf_Dec_By_MsgLen());
+    execute(tc_SIP_Perf_Enc_By_MsgLen());
+    execute(tc_SIP_Perf_Dec_By_MsgLen());
     execute(tc_decodeconstants());
     execute(TC_SIP2_CM_EGRZKIS());
     execute(TC_WARNING());
@@ -1177,4 +1138,4 @@ testcase TC_I() runs on SIP_CT{
     execute(TC_PLANI());
   }
 
-}with {extension "version R14A"}
+}with {extension "version R15A"}
