@@ -19,7 +19,7 @@
 ******************************************************************************/
 //
 //  File:               SIP_parse.l
-//  Rev:                R15A
+//  Rev:                R17B
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -72,7 +72,9 @@ static const MessageHeader emptyheaders=MessageHeader(
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
-    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE
   );
 
 // header part pointers
@@ -1284,7 +1286,7 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 
 
 
-<callid,inreplyto>{NONLWS_NONSC}+                                                            {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _CALLID;
+<callid,inreplyto>{NONLWS_NONSC}+                                                            {
                       // New style
                       num_chars+=SIP_parse_leng;
                       SIP_parse_lval.sv=stream_buffer+pos_in_buf;
@@ -1450,7 +1452,7 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 <front>({A}{C}{2}{E}{P}{T}[-]{L}{A}{N}{G}{U}{A}{G}{E}){ANLWS}*{COLON}                   num_chars+=SIP_parse_leng; BEGIN(acceptstlang); return ACCEPT_LANGUAGELWSCOLON;
 <front>({C}{A}{L}{2}[-]{I}{N}{F}{O}){ANLWS}*{COLON}                                     num_chars+=SIP_parse_leng; BEGIN(callinfo); return CALL_INFOLWSCOLON;
 <front>({C}{S}{E}{Q}){ANLWS}*{COLON}                                                    num_chars+=SIP_parse_leng; BEGIN(cseq); return CSEQLWSCOLON;
-<cseq>{METHOD}                                                                          {//num_chars+=SIP_parse_leng; SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); return _METHOD;
+<cseq>{TOKEN}                                                                          {
                       // New style
                       num_chars+=SIP_parse_leng;
                       SIP_parse_lval.sv=stream_buffer+pos_in_buf;
@@ -1597,6 +1599,13 @@ CTEXT   [\041-\047\052-\176]|{UTF8NNA}|{ANLWS}
 
 <front>({P}[-]{A}{R}{E}{A}[-]{I}{N}{F}{O}){ANLWS}*{COLON}                               num_chars+=SIP_parse_leng; BEGIN(routest); return PAREAINFOLWSCOLON;
 <front>({X}[-]{C}{H}{G}{I}{N}{F}{O}){ANLWS}*{COLON}                                     num_chars+=SIP_parse_leng; BEGIN(routest); return XCHGINFOLWSCOLON;
+
+<front>({C}{O}{N}{V}{E}{R}{S}{A}{T}{I}{O}{N}[-]{I}{D}){ANLWS}*{COLON}                   num_chars+=SIP_parse_leng; BEGIN(callid); return CONVERSATIONIDLWSCOLON;
+<front>({C}{O}{N}{T}{R}{I}{B}{U}{T}{I}{O}{N}[-]{I}{D}){ANLWS}*{COLON}                   num_chars+=SIP_parse_leng; BEGIN(callid); return CONTRIBUTIONIDLWSCOLON;
+<front>({I}{N}{R}{E}{P}{L}{Y}{T}{O}[-]{C}{O}{N}{T}{R}{I}{B}{U}{T}{I}{O}{N}[-]{I}{D}){ANLWS}*{COLON} num_chars+=SIP_parse_leng; BEGIN(callid); return INREPLYTOCONTIDLWSCOLON;
+<front>({M}{E}{S}{S}{A}{G}{E}[-]{E}{X}{P}{I}{R}{E}{S}){ANLWS}*{COLON}                   num_chars+=SIP_parse_leng; BEGIN(expires); return MESSAGEEXPIRESLWSCOLON;
+<front>({M}{E}{S}{S}{A}{G}{E}[-]{U}{I}{D}){ANLWS}*{COLON}                               num_chars+=SIP_parse_leng; BEGIN(cseq); return MESSAGEUIDLWSCOLON;
+<front>({S}{E}{S}{S}{I}{O}{N}[-]{R}{E}{P}{L}{A}{C}{E}{S}){ANLWS}*{COLON}                num_chars+=SIP_parse_leng; BEGIN(callid); return SESSIONREPLACESLWSCOLON;
 
 
 <front>({BADID}*)({ANLWS}*){COLON}                                                      {//num_chars+=SIP_parse_leng; BEGIN(generalcontent); SIP_parse_lval.sv=(char *)Malloc(SIP_parse_leng+1); strcpy(SIP_parse_lval.sv,SIP_parse_text); SIP_parse_lval.sv[strlen(SIP_parse_lval.sv)-1]='\0'; return OTHERLWSCOLON;

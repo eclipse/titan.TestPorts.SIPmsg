@@ -18,7 +18,7 @@
 ******************************************************************************/
 //
 //  File:               SIPmsg_PT.cc
-//  Rev:                R15A
+//  Rev:                R17B
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323,
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -76,7 +76,9 @@ inline static MessageHeader *newMsgHdr() {
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
     OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
-    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE, OMIT_VALUE,
+    OMIT_VALUE
   );
   return headerptr;
 }
@@ -1771,6 +1773,19 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
 
+  if (header->contribution__ID().ispresent()){           //  Contribution-ID header
+    write_to_buff(buff,m_size,b_size, "Contribution-ID:");
+    write_to_buff(buff,m_size,b_size,header->contribution__ID()().contributionid());
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
+
+  if (header->conversation__ID().ispresent()){           //  Conversation-ID header
+    write_to_buff(buff,m_size,b_size, "Conversation-ID:");
+    write_to_buff(buff,m_size,b_size,header->conversation__ID()().conversationid());
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
   if (header->cSeq().ispresent()){
     write_to_buff(buff,m_size,b_size, "CSeq:");              // Cseq header
     write_to_buff(buff,m_size,b_size, int2str(header->cSeq()().seqNumber()));
@@ -1970,6 +1985,12 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
 
+  if (header->inReplyTo__contribution__ID().ispresent()){           //  InReplyTo-Contribution-ID header
+    write_to_buff(buff,m_size,b_size, "InReplyTo-Contribution-ID:");
+    write_to_buff(buff,m_size,b_size,header->inReplyTo__contribution__ID()().contributionid());
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
   if (header->join().ispresent()){     // Join header
     write_to_buff(buff,m_size,b_size, "Join:");
     write_to_buff(buff,m_size,b_size, header->join()().callid());
@@ -1984,6 +2005,18 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
     write_to_buff(buff,m_size,b_size, "Max-Forwards:");
     sprintf(tempsend, "%d" ,(int)header->maxForwards()().forwards() );
     write_to_buff(buff,m_size,b_size, tempsend);
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
+  if (header->message__Expires().ispresent()){           //  Message-Expires header
+    write_to_buff(buff,m_size,b_size, "Message-Expires:");
+    write_to_buff(buff,m_size,b_size,header->message__Expires()().deltaSec());
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
+  if (header->message__UID().ispresent()){           //  Message-UID header
+    write_to_buff(buff,m_size,b_size, "Message-UID:");
+    write_to_buff(buff,m_size,b_size,header->message__UID()().uniqueid());
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
 
@@ -2246,6 +2279,7 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
     }
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
+
 
   if (header->p__last__access__network__info().ispresent()){     // P-Access-Network-Info header
     write_to_buff(buff,m_size,b_size, "P-Last-Access-Network-Info:");
@@ -2707,6 +2741,12 @@ void SIPmsg__PT::encode_headers(char *& buff, int &m_size, int &b_size, int body
       const char *atm[]={";",";","","="};
       print_list(buff,m_size,b_size,& ptr->se__params()(), atm );
     }
+    write_to_buff(buff,m_size,b_size, "\r\n");
+  }
+
+  if (header->session__Replaces().ispresent()){           //  Session-Replaces header
+    write_to_buff(buff,m_size,b_size, "Session-Replaces:");
+    write_to_buff(buff,m_size,b_size,header->session__Replaces()().sessionreplaces());
     write_to_buff(buff,m_size,b_size, "\r\n");
   }
 

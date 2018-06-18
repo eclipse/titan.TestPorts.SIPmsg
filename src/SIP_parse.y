@@ -20,7 +20,7 @@
 ******************************************************************************/
 //
 //  File:               SIP_parse.y
-//  Rev:                R15A
+//  Rev:                R17B
 //  Prodnr:             CNL 113 319
 //  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
@@ -205,6 +205,7 @@ extern char * stream_buffer; // EPTEBAL
 %type <divparam_list> p_divspec_1toN
 %type <em_bdy_list> embody1toN
 %type <service_1toN> service1toN
+%type <sv> token_star
 %token CALL_IDLWSCOLON SOMELWS _LAES_CONTENT
 %token <sv> _TOKEN _STOKEN _DIGEST _COMMENT USERINFO_AT _STAR
 
@@ -312,6 +313,12 @@ extern char * stream_buffer; // EPTEBAL
 %token FEATURECAPSLWSCOLON
 %token RECVINFOLWSCOLON
 %token PLASTACCESSNETLWSCOLON
+%token CONVERSATIONIDLWSCOLON
+%token CONTRIBUTIONIDLWSCOLON
+%token INREPLYTOCONTIDLWSCOLON
+%token MESSAGEEXPIRESLWSCOLON
+%token MESSAGEUIDLWSCOLON
+%token SESSIONREPLACESLWSCOLON
 %token <sv> _TOKEN_NO_DOT _HEXTOKEN
 %token <cv> _DOT
 %token <cv> _SLASH
@@ -332,6 +339,7 @@ extern char * stream_buffer; // EPTEBAL
 %token PAREAINFOLWSCOLON
 %token XFCILWSCOLON
 %token XCHGINFOLWSCOLON
+
 %destructor {delete $$;}
 event_event
 event_event_template1toN
@@ -1385,10 +1393,45 @@ general_header:
     | X_CHGDelay _CRLF {headerptr->x__CHGDelay()().fieldName()=FieldName::X__CHGDELAY__E;} 
     | p_area_info _CRLF {headerptr->p__Area__Info()().fieldName()=FieldName::P__AREA__INFO__E;}  
     | X_CHGInfo _CRLF {headerptr->x__CHGInfo()().fieldName()=FieldName::X__CHGINFO__E;}
-    | X_FCI _CRLF     {headerptr->x__FCI()().fieldName()=FieldName::X__FCI__E;}               
+    | X_FCI _CRLF     {headerptr->x__FCI()().fieldName()=FieldName::X__FCI__E;}  
+    | convid_header _CRLF   {headerptr->conversation__ID()().fieldName()=FieldName::CONVERSATION__ID__E;}  
+    | contribid_header _CRLF     {headerptr->contribution__ID()().fieldName()=FieldName::CONTRIBUTION__ID__E;}  
+    | inreplyto_contribid_header _CRLF     {headerptr->inReplyTo__contribution__ID()().fieldName()=FieldName::INREPLYTO__CONTRIBUTION__ID__E;}  
+    | msgexpires_header _CRLF     {headerptr->message__Expires()().fieldName()=FieldName::MESSAGE__EXPIRES__E;}  
+    | msguid_header _CRLF     {headerptr->message__UID()().fieldName()=FieldName::MESSAGE__UID__E;}  
+    | sessionreplaces_header _CRLF     {headerptr->session__Replaces()().fieldName()=FieldName::SESSION__REPLACES__E;}  
+                 
     | Other _CRLF;
 
+convid_header:
+    CONVERSATIONIDLWSCOLON LWS_0toN _CALLID {
+      headerptr->conversation__ID()().conversationid()=$3;
+    };
 
+contribid_header:
+    CONTRIBUTIONIDLWSCOLON LWS_0toN _CALLID {
+      headerptr->contribution__ID()().contributionid()=$3;
+    };
+
+inreplyto_contribid_header:
+    INREPLYTOCONTIDLWSCOLON LWS_0toN _CALLID {
+      headerptr->inReplyTo__contribution__ID()().contributionid()=$3;
+    };
+
+sessionreplaces_header:
+    SESSIONREPLACESLWSCOLON LWS_0toN _CALLID {
+      headerptr->session__Replaces()().sessionreplaces()=$3;
+    };
+
+msgexpires_header:
+    MESSAGEEXPIRESLWSCOLON LWS_0toN _TOKEN {
+      headerptr->message__Expires()().deltaSec()=$3;
+    };
+
+msguid_header:
+    MESSAGEUIDLWSCOLON LWS_0toN SOMEDIGITS {
+      headerptr->message__UID()().uniqueid()=$3;
+    };
 
 recv_info_header:
     RECVINFOLWSCOLON {
@@ -3434,18 +3477,22 @@ From:
         urlparamcount=headercount=0;
       };
 
+token_star:
+   _TOKEN {$$=$1;}
+   | _STAR {$$=$1;};
+
 semicolon_fromparam_1toN:
     SOMELWS_SEMICOLON from_param {}
     | semicolon_fromparam_1toN SOMELWS_SEMICOLON from_param {};
 
 from_param:
-    SOMELWS _TOKEN SOMELWS equals_token_host_qtdstr {
+    SOMELWS token_star SOMELWS equals_token_host_qtdstr {
         (*paramptr)[paramcount].id()=$2;
         (*paramptr)[paramcount].paramValue()=$4;
         paramcount++;
 //        Free($2);Free($4);
       }
-    | _TOKEN SOMELWS equals_token_host_qtdstr {
+    | token_star SOMELWS equals_token_host_qtdstr {
         (*paramptr)[paramcount].id()=$1;
         (*paramptr)[paramcount].paramValue()=$3;
         paramcount++;
@@ -3457,14 +3504,14 @@ from_param:
     
     
 from_param_withoutlws:
-     _TOKEN equals_token_host_qtdstr {
+     token_star equals_token_host_qtdstr {
         (*paramptr)[paramcount].id()=$1;
         (*paramptr)[paramcount].paramValue()=$2;
         paramcount++;
 //        Free($1);
 //        Free($2);
       }
-    | _TOKEN {
+    | token_star {
         (*paramptr)[paramcount].id()=$1;
         (*paramptr)[paramcount].paramValue()=OMIT_VALUE;
         paramcount++;
@@ -3515,6 +3562,7 @@ equals_token_host_qtdstr:
 token_or_host_or_quotedstring: /* removes parantheses above */
     _TOKEN                            /*/default act*/
     | _HOST                            /*/default act*/
+    | _STAR                            /*/default act*/
     | QUOTED_STRING;                    /*/default act*/
 
 generic_param_withoutlws:    // used by url_param!

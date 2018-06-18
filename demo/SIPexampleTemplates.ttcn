@@ -22,10 +22,10 @@ module SIPexampleTemplates
 
   modulepar charstring      PX_ETS_LOCAL_USER2;
   modulepar charstring      PX_ETS_IPADDR2;
-  modulepar integer      	PX_ETS_PORT2;
+  modulepar integer         PX_ETS_PORT2;
   modulepar charstring      PX_ETS_LOCAL_USER;
   modulepar charstring      PX_ETS_IPADDR;
-  modulepar integer      	PX_ETS_PORT;
+  modulepar integer         PX_ETS_PORT;
 
 group SimpleConstants
 {
@@ -120,973 +120,999 @@ group SimpleConstants
 
 group templates
 {
-	template SipUrl desturl :={
-		scheme := "sip",
-		userInfo :={
-			userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER2,
-			password:= omit
-		},
-		hostPort :={
-			host:= PX_ETS_IPADDR2,
-			portField:= PX_ETS_PORT2
-		},
-		urlParameters:= omit,
-		headers:= omit
-	};
+  template SipUrl desturl :={
+    scheme := "sip",
+    userInfo :={
+      userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER2,
+      password:= omit
+    },
+    hostPort :={
+      host:= PX_ETS_IPADDR2,
+      portField:= PX_ETS_PORT2
+    },
+    urlParameters:= omit,
+    headers:= omit
+  };
 
-    template CallId callid :={
-    	fieldName:=CALL_ID_E,
-    	callid:="9341AE62-BA3C-49DF-B937-0D967652848A@" & PX_ETS_IPADDR
-	};
-	
-	template From fromfield :={
-		fieldName:= FROM_E,
-		addressField :={
-			nameAddr :={
-				displayName:= PX_ETS_LOCAL_USER,
-				addrSpec :={
-					scheme := "sip",
-					userInfo :={
-						userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
-						password:= omit
-					},
-					hostPort :={
-						host:= PX_ETS_IPADDR ,
-						portField:= omit
-					},
-					urlParameters:= omit,
-					headers:= omit
-				}
-			}
-		},
-		fromParams :={
-		  {
-		    id:="tag",
-		    paramValue:="Ody~mVEYT"
-		  }
-		}
-	};
-                            
-	template To tofield :={
-		fieldName:= TO_E,
-		addressField :={
-			nameAddr :={
-				displayName:= PX_ETS_LOCAL_USER2,
-				addrSpec :={
-					scheme := "sip",
-					userInfo :={
-						userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER2,
- 						password:= omit
-					},
-					hostPort :={
-						host:= PX_ETS_IPADDR2,
-						portField:= omit
-					},
-					urlParameters:= omit,
-					headers:= omit
-				}
-			}
-		},
-		toParams:=omit
-	};
-                            
-	template Via T_via :={
-		fieldName:= VIA_E,
-		viaBody :={
-		{
-			sentProtocol :={
-				protocolName := cg_SIP_NAME,
-				protocolVersion := cg_SIP_VERSION,
-				transport := "UDP"
-			},
-			sentBy :={
-				host:=PX_ETS_IPADDR,
-				portField:=PX_ETS_PORT
-			},
-			viaParams :={
-			  {
-			    id:="branch",
-			    paramValue:="z9hG4bKalma123456"
-			  }
-			}
-		}
-		}
-	};
-	
-	template Via T_via_2 :={
-		fieldName:= VIA_E,
-		viaBody :={
-		{
-			sentProtocol :={
-				protocolName := cg_SIP_NAME,
-				protocolVersion := cg_SIP_VERSION,
-				transport := "UDP"
-			},
-			sentBy :={
-				host:=PX_ETS_IPADDR,
-				portField:=PX_ETS_PORT
-			},
-			viaParams :={
-			  {
-			    id:="branch",
-			    paramValue:="z9hG4bKalma654321"
-			  }
-			}
-		}
-		}
-	};
-	
-	template Via T_via_3 :={
-		fieldName:= VIA_E,
-		viaBody :={
-		{
-			sentProtocol :={
-				protocolName := cg_SIP_NAME,
-				protocolVersion := cg_SIP_VERSION,
-				transport := "UDP"
-			},
-			sentBy :={
-				host:=PX_ETS_IPADDR,
-				portField:=PX_ETS_PORT
-			},
-			viaParams :={
-			  {
-			    id:="branch",
-			    paramValue:="z9hG4bKkorte654321"
-			  }
-			}
-		}
-		}
-	};
-                  
-	template Contact T_contact :={
-		fieldName:= CONTACT_E,
-		contactBody :={
-			contactAddresses :={
-			{
-				addressField :={
-					nameAddr :={
-						displayName:= PX_ETS_LOCAL_USER,
-						addrSpec :={
-							scheme := "sip",
-							userInfo :={
-								userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
-								password:= omit
-							},
-							hostPort :={
-								host:= PX_ETS_IPADDR,
-								portField:= omit
-							},
-							urlParameters:= omit,
-							headers:= omit
-						}
-					}
-				},
-				contactParams:= omit             
-			}
-			}
-		}
-	};
-	
-	template PDU_SIP_Request INVITE_Request_s_1:={
-		requestLine	:={
-			method := INVITE_E,
-			requestUri := desturl,
-			sipVersion := cg_SIP_NAME_VERSION
-		},
-		msgHeader :={
-		  	accept := omit,
-		  	accept_contact:=omit,
-		  	acceptEncoding := omit,
-			acceptLanguage := omit,
-			acceptResourcePriority := omit,
-			alertInfo := omit,
-			alert_mode:=omit,
-			allow  := {
-			  fieldName := ALLOW_E,
-			  methods := {"INVITE", "ACK", "BYE"}
-			},
-			allow_events := omit,
-    		answer_mode:=omit,
-			authenticationInfo := omit,
-			authorization := omit,
-			callId := callid,
-			callInfo := omit,
-			contact := T_contact,
-			contentDisposition := omit,
-			contentEncoding := omit,
-			contentLanguage := omit,
-			contentLength := omit, //{fieldName := CONTENT_LENGTH_E, len := 0},
-			contentType := omit, //{
-			//	fieldName := CONTENT_TYPE_E,
-			//	mediaType:= "application/sdp"
-			//},
-			cSeq :={ 
-				fieldName:=CSEQ_E, 
-				seqNumber:=1, 
-				method:="INVITE"
-    		},
-			date := omit,
-			diversion:=omit,
-			errorInfo  := omit,
-			event := omit,
-			expires := omit,
-			feature_caps := omit,
-			fromField := fromfield,
-			geolocation := omit, 
-			geolocation_routing := omit, 
-			geolocation_error := omit,
-			historyInfo := omit,
-			info_Package := omit, 
-			inReplyTo := omit,
-			join:=omit,
-			maxForwards :={		  
-				fieldName := MAX_FORWARDS_E, 
-				forwards :=  70
-			},
-			mimeVersion := omit,
-			minExpires := omit,
-			min_SE := omit,
-			organization := omit,
-			p_access_network_info := omit,
-    		p_alerting_mode:=omit,
-			p_answer_state:=omit,
-    		p_Area_Info := omit,
-			passertedID:=omit,
-			p_asserted_service := omit,
-    		p_associated_uri := omit,
-    		p_called_party_id := omit,
-    		p_charging_function_address := omit,
-    		p_charging_vector := omit,
-    		p_DCS_trace_pty_id:=omit,
-			p_DCS_OSPS:=omit,
-			p_DCS_billing_info:=omit,
-			p_DCS_LAES:=omit,
-			p_DCS_redirect:=omit,
-			p_Early_Media := omit,
-    		p_last_access_network_info:=omit,
-    		p_media_auth:=omit,
-    		ppreferredID:=omit,
-    		p_preferred_service := omit, 
-    		p_profile_key:=omit,
-    		p_served_user:=omit,
-    		p_Service_Indication := omit, 
-    		p_Service_Notification := omit,
-    		p_user_database:=omit,
-    		p_visited_network_id := omit,
-    		path:=omit,
-    		priv_answer_mode:=omit,
-    		priority := omit,
-			privacy:=omit,
-			proxyAuthenticate := omit,
-			proxyAuthorization := omit,
-			proxyRequire := omit,
-			rack:=omit,
-			rseq:=omit,
-			reason:=omit,
-			recordRoute := omit,
-			recv_Info := omit, 
-			reject_contact:=omit,
-			refer_sub :=omit,
-			refer_to:=omit,
-			referred_by:=omit,
-			replyTo := omit,
-			replaces:=omit,
-			require := omit,
-			request_disp:=omit,
-			resourcePriority := omit,
-			retryAfter := omit,
-			route := omit,
-			security_client:=omit,
-			security_server:=omit,
-			security_verify:=omit,
-			session_expires :=omit,
-    		session_id:=omit,
-    		server :=omit,
-			service_route:=omit,
-			sip_ETag:=omit,
-			sip_If_Match:=omit,
-			subject := omit,
-    		subscription_state :=omit,
-			supported := {
-			  fieldName := SUPPORTED_E,
-			  optionsTags := { "timer" }
-			},
-			target_dialog := omit, 
-			timestamp := omit,
-			toField := tofield,
-			unsupported := omit,
-			userAgent := {
-			  fieldName := USER_AGENT_E,
-			  userAgentBody := { "SIPmsg" }
-			},
-			via := T_via,
-			warning := omit,
-			wwwAuthenticate := omit,
-			x_AUT := omit,
-			x_Carrier_Info := omit, 
-			x_CHGDelay := omit, 
-			x_CHGInfo := omit,
-			x_FCI := omit,
-			undefinedHeader_List := omit
-		},
-		messageBody := omit,
-		payload := omit
-	}
+  template CallId callid :={
+    fieldName:=CALL_ID_E,
+    callid:="9341AE62-BA3C-49DF-B937-0D967652848A@" & PX_ETS_IPADDR
+  };
 
-	template PDU_SIP_Request ACK_Request_s_1:={
-		requestLine:={
-			method:=ACK_E,
-			requestUri:=desturl,
-			sipVersion:=cg_SIP_NAME_VERSION
-		},
-		msgHeader:={
-			accept := omit,
-		  	accept_contact:=omit,
-		  	acceptEncoding := omit,
-			acceptLanguage := omit,
-			acceptResourcePriority := omit,
-			alertInfo := omit,
-			alert_mode:=omit,
-			allow:=omit,
-			allow_events := omit,
-    		answer_mode:=omit,
-			authenticationInfo := omit,
-			authorization := omit,
-			callId := callid,
-			callInfo := omit,
-			contact := omit,
-			contentDisposition := omit,
-			contentEncoding := omit,
-			contentLanguage := omit,
-			contentLength := omit, 
-			contentType := omit,
-			cSeq :={
-				fieldName:= CSEQ_E, 
-  				seqNumber:=1, 
-  				method:="ACK"
-			},
-			date := omit,
-			diversion:=omit,
-			errorInfo  := omit,
-			event := omit,
-			expires := omit,
-			feature_caps := omit,
-			fromField := fromfield,
-			geolocation := omit, 
-			geolocation_routing := omit, 
-			geolocation_error := omit,
-			historyInfo := omit,
-			info_Package := omit, 
-			inReplyTo := omit,
-			join:=omit,
-			maxForwards :={		  
-				fieldName := MAX_FORWARDS_E, 
-				forwards :=  70
-			},
-			mimeVersion := omit,
-			minExpires := omit,
-			min_SE := omit,
-			organization := omit,
-			p_access_network_info := omit,
-    		p_alerting_mode:=omit,
-			p_answer_state:=omit,
-    		p_Area_Info := omit,
-			passertedID:=omit,
-			p_asserted_service := omit,
-    		p_associated_uri := omit,
-    		p_called_party_id := omit,
-    		p_charging_function_address := omit,
-    		p_charging_vector := omit,
-    		p_DCS_trace_pty_id:=omit,
-			p_DCS_OSPS:=omit,
-			p_DCS_billing_info:=omit,
-			p_DCS_LAES:=omit,
-			p_DCS_redirect:=omit,
-			p_Early_Media := omit,
-    		p_last_access_network_info:=omit,
-    		p_media_auth:=omit,
-    		ppreferredID:=omit,
-    		p_preferred_service := omit, 
-    		p_profile_key:=omit,
-    		p_served_user:=omit,
-    		p_Service_Indication := omit, 
-    		p_Service_Notification := omit,
-    		p_user_database:=omit,
-    		p_visited_network_id := omit,
-    		path:=omit,
-    		priv_answer_mode:=omit,
-    		priority := omit,
-			privacy:=omit,
-			proxyAuthenticate := omit,
-			proxyAuthorization := omit,
-			proxyRequire := omit,
-			rack:=omit,
-			rseq:=omit,
-			reason:=omit,
-			recordRoute := omit,
-			recv_Info := omit, 
-			reject_contact:=omit,
-			refer_sub :=omit,
-			refer_to:=omit,
-			referred_by:=omit,
-			replyTo := omit,
-			replaces:=omit,
-			require := omit,
-			request_disp:=omit,
-			resourcePriority := omit,
-			retryAfter := omit,
-			route := omit,
-			security_client:=omit,
-			security_server:=omit,
-			security_verify:=omit,
-			session_expires :=omit,
-    		session_id:=omit,
-    		server :=omit,
-			service_route:=omit,
-			sip_ETag:=omit,
-			sip_If_Match:=omit,
-			subject := omit,
-    		subscription_state :=omit,
-			supported:=omit,
-			target_dialog := omit, 
-			timestamp := omit,
-			toField := tofield,
-			unsupported := omit,
-			userAgent := {
-			  fieldName := USER_AGENT_E,
-			  userAgentBody := { "SIPmsg" }
-			},
-			via := T_via_2,
-			warning := omit,
-			wwwAuthenticate := omit,
-			x_AUT := omit,
-			x_Carrier_Info := omit, 
-			x_CHGDelay := omit, 
-			x_CHGInfo := omit,
-			x_FCI := omit,
-			undefinedHeader_List := omit
-		},
-		messageBody:=omit,
-		payload:=omit
-	}
-	
-	template PDU_SIP_Request BYE_Request_s_1:={
-		requestLine:={
-			method:=BYE_E,
-			requestUri:=desturl,
-			sipVersion:=cg_SIP_NAME_VERSION
-		},
-		msgHeader:={
-			accept := omit,
-		  	accept_contact:=omit,
-		  	acceptEncoding := omit,
-			acceptLanguage := omit,
-			acceptResourcePriority := omit,
-			alertInfo := omit,
-			alert_mode:=omit,
-			allow:=omit,
-			allow_events := omit,
-    		answer_mode:=omit,
-			authenticationInfo := omit,
-			authorization := omit,
-			callId := callid,
-			callInfo := omit,
-			contact := omit,
-			contentDisposition := omit,
-			contentEncoding := omit,
-			contentLanguage := omit,
-			contentLength := omit, 
-			contentType := omit,
-			cSeq :={
-				fieldName:= CSEQ_E, 
-  				seqNumber:=111, 
-  				method:="BYE"
-			},
-			date := omit,
-			diversion:=omit,
-			errorInfo  := omit,
-			event := omit,
-			expires := omit,
-			feature_caps := omit,
-			fromField := fromfield,
-			geolocation := omit, 
-			geolocation_routing := omit, 
-			geolocation_error := omit,
-			historyInfo := omit,
-			info_Package := omit, 
-			inReplyTo := omit,
-			join:=omit,
-			maxForwards :={		  
-				fieldName := MAX_FORWARDS_E, 
-				forwards :=  70
-			},
-			mimeVersion := omit,
-			minExpires := omit,
-			min_SE := omit,
-			organization := omit,
-			p_access_network_info := omit,
-    		p_alerting_mode:=omit,
-			p_answer_state:=omit,
-    		p_Area_Info := omit,
-			passertedID:=omit,
-			p_asserted_service := omit,
-    		p_associated_uri := omit,
-    		p_called_party_id := omit,
-    		p_charging_function_address := omit,
-    		p_charging_vector := omit,
-    		p_DCS_trace_pty_id:=omit,
-			p_DCS_OSPS:=omit,
-			p_DCS_billing_info:=omit,
-			p_DCS_LAES:=omit,
-			p_DCS_redirect:=omit,
-			p_Early_Media := omit,
-    		p_last_access_network_info:=omit,
-    		p_media_auth:=omit,
-    		ppreferredID:=omit,
-    		p_preferred_service := omit, 
-    		p_profile_key:=omit,
-    		p_served_user:=omit,
-    		p_Service_Indication := omit, 
-    		p_Service_Notification := omit,
-    		p_user_database:=omit,
-    		p_visited_network_id := omit,
-    		path:=omit,
-    		priv_answer_mode:=omit,
-    		priority := omit,
-			privacy:=omit,
-			proxyAuthenticate := omit,
-			proxyAuthorization := omit,
-			proxyRequire := omit,
-			rack:=omit,
-			rseq:=omit,
-			reason:=omit,
-			recordRoute := omit,
-			recv_Info := omit, 
-			reject_contact:=omit,
-			refer_sub :=omit,
-			refer_to:=omit,
-			referred_by:=omit,
-			replyTo := omit,
-			replaces:=omit,
-			require := omit,
-			request_disp:=omit,
-			resourcePriority := omit,
-			retryAfter := omit,
-			route := omit,
-			security_client:=omit,
-			security_server:=omit,
-			security_verify:=omit,
-			session_expires :=omit,
-    		session_id:=omit,
-    		server :=omit,
-			service_route:=omit,
-			sip_ETag:=omit,
-			sip_If_Match:=omit,
-			subject := omit,
-    		subscription_state :=omit,
-			supported:=omit,
-			target_dialog := omit, 
-			timestamp := omit,
-			toField := tofield,
-			unsupported := omit,
-			userAgent := {
-			  fieldName := USER_AGENT_E,
-			  userAgentBody := { "SIPmsg" }
-			},
-			via := T_via_3,
-			warning := omit,
-			wwwAuthenticate := omit,
-			x_AUT := omit,
-			x_Carrier_Info := omit, 
-			x_CHGDelay := omit, 
-			x_CHGInfo := omit,
-			x_FCI := omit,
-			undefinedHeader_List := omit
-		},
-		messageBody:=omit,
-		payload:=omit
-	}
+  template From fromfield :={
+    fieldName:= FROM_E,
+    addressField :={
+      nameAddr :={
+        displayName:= PX_ETS_LOCAL_USER,
+        addrSpec :={
+          scheme := "sip",
+          userInfo :={
+            userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+            password:= omit
+          },
+          hostPort :={
+            host:= PX_ETS_IPADDR ,
+            portField:= omit
+          },
+          urlParameters:= omit,
+          headers:= omit
+        }
+      }
+    },
+    fromParams :={
+      {
+        id:="tag",
+        paramValue:="Ody~mVEYT"
+      }
+    }
+  };
 
-	template PDU_SIP_Request NOTIFY_Request_s_2:={
-		requestLine	:={
-			method := NOTIFY_E,
-			requestUri := desturl,
-			sipVersion := cg_SIP_NAME_VERSION
-		},
-		msgHeader :={
-		  	accept := omit,
-		  	accept_contact:=omit,
-		  	acceptEncoding := omit,
-			acceptLanguage := omit,
-			acceptResourcePriority := omit,
-			alertInfo := omit,
-			alert_mode:=omit,
-			allow := omit,
-			allow_events :={
-			  	fieldName := ALLOW_EVENTS_E,
-                  	events:= {  
-                  	{
-                    	event_package:="pack",
-                        event_templates:={"t1","t2"}
-                    },
-                    {
-						event_package:="pack3",
-						event_templates:={"t3","t5"}
-                    }
-                }
-            },
-    		answer_mode:=omit,
-			authenticationInfo := omit,
-			authorization := omit,
-			callId := callid,
-			callInfo := omit,
-			contact := T_contact,
-			contentDisposition := omit,
-			contentEncoding := omit,
-			contentLanguage := omit,
-			contentLength :={ 
-				fieldName := CONTENT_LENGTH_E,
-				len := 0
-			},
-			contentType := {
-            	fieldName := CONTENT_TYPE_E,
-            	mediaType:= "application/sdp"
-            },
-			cSeq :={ 
-				fieldName:=CSEQ_E, 
-				seqNumber:=1, 
-				method:="INVITE"
-    		},
-			date := omit,
-			diversion:=omit,
-			errorInfo  := omit,
-			event :={
-				fieldName := EVENT_E,
-           		event_type :={
-              		event_package:="pack",
-                	event_templates:={"t1","t2"}
-              	},
-                event_params :={
-                {
-                	id:="p1",
-                	paramValue:="a1"
-                },
-                {
-                	id:="p2",
-                	paramValue:="a2"}
-                }
-            },
-			expires := omit,
-			feature_caps := omit,
-			fromField := fromfield,
-			geolocation := omit, 
-			geolocation_routing := omit, 
-			geolocation_error := omit,
-			historyInfo := {
-				fieldName := HISTORY_INFO_E,
-            	hi_entries :={
-            	{
-            		nameAddr :={
-            			displayName:= PX_ETS_LOCAL_USER,
-                        addrSpec :={
-                        	scheme := "sipka",
-                            userInfo :={
-                            	userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
-                            	password:= omit
-                            },
-                            hostPort :={
-								host:= PX_ETS_IPADDR,
-								portField:= omit
-							},
-                            urlParameters:= omit,
-                            headers:= omit
-						}
-					},
-					hi_params :={
-					{
-						id:="p1",
-						paramValue:="a1"
-					},
-					{
-						id:="p2",				
-						paramValue:="a2"
-					}
-					}
-				}
-				}
-          	},
-			info_Package := omit, 
-			inReplyTo := omit,
-			join:=omit,
-			maxForwards :={		  
-				fieldName := MAX_FORWARDS_E, 
-				forwards :=  70
-			},
-			mimeVersion := omit,
-			minExpires := omit,
-			min_SE :={
-			  	fieldName := MIN_SE_E,
-                deltaSec:= "231",
-                params:=omit
-            },
-			organization := omit,
-			p_access_network_info :={
-			  	fieldName := P_ACCESS_NETWORK_INFO,
-                access_net_specs := {
-                {
-                	access_type:= "3GPP-GERAN",
-                    access_info:={
-                    {
-                    	id:="cgi-3gpp",paramValue:="probation"
-                    },
-                    {
-                    	id:="utran-cell-id-3gpp",paramValue:="\"hali ho1\""
-                    }
-                    }
-                },
-                {
-                    access_type:= "3GPP-GERAN",
-                    access_info:={
-                    {
-                    	id:="cgi-3gpp",paramValue:="probation"
-                    },
-                    {
-                    	id:="utran-cell-id-3gpp",paramValue:="\"hali ho2\""
-                    }
-                    }
-                }
-                }
-            },
-    		p_alerting_mode:=omit,
-			p_answer_state:=omit,
-    		p_Area_Info := omit,
-			passertedID:=omit,
-			p_asserted_service := omit,
-    		p_associated_uri :={
-    		  	fieldName := P_ASSOCIATED_URI,
-                p_assoc_uris :={
-                {
-                  	p_asso_uri :={
-                  		displayName:= PX_ETS_LOCAL_USER,
-						addrSpec :={
-						  	scheme := "sip",
-                            userInfo :={
-	                            userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
-	                            password:= omit
-                            },
-                            hostPort :={
-	                            host:= PX_ETS_IPADDR,
-	                            portField:= omit
-                            },
-                            urlParameters:= omit,
-                            headers:= omit
-						}
-					},
-                    ai_params:=omit
-				},
-                {
-                  	p_asso_uri :={
-                  	  	displayName:= PX_ETS_LOCAL_USER,
-                        addrSpec :={
-                          	scheme := "sipka",
-                            userInfo :={
-	                        	userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
-	                        	password:= omit
-                        	},
-                            hostPort :={
-	                            host:= PX_ETS_IPADDR,
-	                            portField:= omit
-                            },
-                            urlParameters:= omit,
-                            headers:= omit
-                        }
-                    },
-					ai_params :={
-					{
-						id:="p1",
-						paramValue:="a1"
-					},
-					{
-						id:="p2",
-						paramValue:="a2"
-					}
-					}
-                }
-            	}
-            },
-    		p_called_party_id :={
-    		  	fieldName := P_CALLED_PARTY_ID,
-                called_pty_id :={
-                	displayName:= PX_ETS_LOCAL_USER,
-                    addrSpec :={ 
-                    	scheme := "sip",
-                        userInfo :={ 
-                        	userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,password:= omit
-                        },
-                        hostPort :={
-                        	host:= PX_ETS_IPADDR ,
-                            portField:= omit
-                        },
-                        urlParameters:= omit,
-                        headers:= omit
-					}
-				},
-                cpid_param:=omit
-            },
-    		p_charging_function_address :={
-    			fieldName := P_CHARGING_FUNCTION_ADDRESS,
-                charge_addr_params:={
-                {
-                	id:="ccf",
-                    paramValue:="ejnye"
-                }
-                }
-            },
-    		p_charging_vector :={
-    			fieldName := P_CHARGING_VECTOR,
-                icid_value:= "bejnye",
-                charge_params :={
-                {
-	                id:="cgi-3gpp",
-	                paramValue:="probation"
-                },
-                {
-	                id:="utran-cell-id-3gpp",
-	                paramValue:="\"hali ho\""
-                }
-                }
-            },
-    		p_DCS_trace_pty_id:=omit,
-			p_DCS_OSPS:=omit,
-			p_DCS_billing_info:=omit,
-			p_DCS_LAES:=omit,
-			p_DCS_redirect:=omit,
-			p_Early_Media := omit,
-    		p_last_access_network_info:=omit,
-    		p_media_auth:=omit,
-    		ppreferredID:=omit,
-    		p_preferred_service := omit, 
-    		p_profile_key:=omit,
-    		p_served_user:=omit,
-    		p_Service_Indication := omit, 
-    		p_Service_Notification := omit,
-    		p_user_database:=omit,
-    		p_visited_network_id :={
-    		  	fieldName := P_VISITED_NETWORK_ID,
-                vnetworks :={
-                {
-                  	network_id:= "Net1",
-                    network_par:=omit
-                },
-                {
-                  	network_id:= "\"Mobil a buli\"",
-                    network_par :={
-                    {
-	                    id:="cgi-3gpp",
-	                    paramValue:="probation"
-                    },
-                    {
-	                    id:="utran-cell-id-3gpp",
-	                    paramValue:="\"hali ho\""
-                    }
-                    }
-                }
-                }
-            },
-    		path:=omit,
-    		priv_answer_mode:=omit,
-    		priority := omit,
-			privacy:=omit,
-			proxyAuthenticate := omit,
-			proxyAuthorization := omit,
-			proxyRequire := omit,
-			rack:=omit,
-			rseq:=omit,
-			reason:=omit,
-			recordRoute := omit,
-			recv_Info := omit, 
-			reject_contact:=omit,
-			refer_sub :={
-				fieldName :=REFER_SUB_E,
-				refer_sub_value:="nade",
-				refer_sub_param:=omit
-			},
-			refer_to:=omit,
-			referred_by:=omit,
-			replyTo := omit,
-			replaces:=omit,
-			require := omit,
-			request_disp:=omit,
-			resourcePriority := omit,
-			retryAfter := omit,
-			route := omit,
-			security_client:=omit,
-			security_server:=omit,
-			security_verify:=omit,
-			session_expires :={
-			  	fieldName := SESSION_EXPIRES_E,
-                deltaSec:= "123",
-                se_params:=omit
-            },
-    		session_id:=omit,
-    		server :={		  
-	    		fieldName := SERVER_E,		
-	    		serverBody := {"Server:PoC-client/OMA1.0"}
-    		},
-			service_route:=omit,
-			sip_ETag:=omit,
-			sip_If_Match:=omit,
-			subject := omit,
-    		subscription_state :={
-    			fieldName := SUBSCRIPTION_STATE_E,
-                substate_value:= "active",
-                subexp_params:=omit
-            },
-			supported := omit,
-			target_dialog := omit, 
-			timestamp := omit,
-			toField := tofield,
-			unsupported := omit,
-			userAgent := {
-			  fieldName := USER_AGENT_E,
-			  userAgentBody := { "SJLabs-SJPhone/1.0" }
-			},
-			via := T_via,
-			warning := omit,
-			wwwAuthenticate := omit,
-			x_AUT := omit,
-			x_Carrier_Info := omit, 
-			x_CHGDelay := omit, 
-			x_CHGInfo := omit,
-			x_FCI := omit,
-			undefinedHeader_List := omit
-		},
-		messageBody := "haliho",
-		payload := omit
-	}
+  template To tofield :={
+    fieldName:= TO_E,
+    addressField :={
+      nameAddr :={
+        displayName:= PX_ETS_LOCAL_USER2,
+        addrSpec :={
+          scheme := "sip",
+          userInfo :={
+            userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER2,
+             password:= omit
+          },
+          hostPort :={
+            host:= PX_ETS_IPADDR2,
+            portField:= omit
+          },
+          urlParameters:= omit,
+          headers:= omit
+        }
+      }
+    },
+    toParams:=omit
+  };
 
-	template PDU_SIP_Response T_ringing :={
-		statusLine :={
-			sipVersion:=?,
-			statusCode:= 180,
-			reasonPhrase:=?
-		},
-		msgHeader:=?,
-		messageBody:=*,
-		payload:=*
-	}
-	
-	template PDU_SIP_Response T_OK_r :={
-		statusLine :={
-			sipVersion:=?,
-			statusCode:= 200,
-			reasonPhrase:=?
-		},
-		msgHeader:=?,
-		messageBody:=*,
-		payload:=*
-	}
+  template Via T_via :={
+    fieldName:= VIA_E,
+    viaBody :={
+      {
+        sentProtocol :={
+          protocolName := cg_SIP_NAME,
+          protocolVersion := cg_SIP_VERSION,
+          transport := "UDP"
+        },
+        sentBy :={
+          host:=PX_ETS_IPADDR,
+          portField:=PX_ETS_PORT
+        },
+        viaParams :={
+          {
+            id:="branch",
+            paramValue:="z9hG4bKalma123456"
+          }
+        }
+      }
+    }
+  };
+
+  template Via T_via_2 :={
+    fieldName:= VIA_E,
+    viaBody :={
+      {
+        sentProtocol :={
+          protocolName := cg_SIP_NAME,
+          protocolVersion := cg_SIP_VERSION,
+          transport := "UDP"
+        },
+        sentBy :={
+          host:=PX_ETS_IPADDR,
+          portField:=PX_ETS_PORT
+        },
+        viaParams :={
+          {
+            id:="branch",
+            paramValue:="z9hG4bKalma654321"
+          }
+        }
+      }
+    }
+  };
+
+  template Via T_via_3 :={
+    fieldName:= VIA_E,
+    viaBody :={
+      {
+        sentProtocol :={
+          protocolName := cg_SIP_NAME,
+          protocolVersion := cg_SIP_VERSION,
+          transport := "UDP"
+        },
+        sentBy :={
+          host:=PX_ETS_IPADDR,
+          portField:=PX_ETS_PORT
+        },
+        viaParams :={
+          {
+            id:="branch",
+            paramValue:="z9hG4bKkorte654321"
+          }
+        }
+      }
+    }
+  };
+
+  template Contact T_contact :={
+    fieldName:= CONTACT_E,
+    contactBody :={
+      contactAddresses :={
+        {
+          addressField :={
+            nameAddr :={
+              displayName:= PX_ETS_LOCAL_USER,
+              addrSpec :={
+                scheme := "sip",
+                userInfo :={
+                  userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+                  password:= omit
+                },
+                hostPort :={
+                  host:= PX_ETS_IPADDR,
+                  portField:= omit
+                },
+                urlParameters:= omit,
+                headers:= omit
+              }
+            }
+          },
+          contactParams:= omit
+        }
+      }
+    }
+  };
+
+  template PDU_SIP_Request INVITE_Request_s_1:={
+    requestLine  :={
+      method := INVITE_E,
+      requestUri := desturl,
+      sipVersion := cg_SIP_NAME_VERSION
+    },
+    msgHeader :={
+      accept := omit,
+      accept_contact:=omit,
+      acceptEncoding := omit,
+      acceptLanguage := omit,
+      acceptResourcePriority := omit,
+      alertInfo := omit,
+      alert_mode:=omit,
+      allow  := {
+        fieldName := ALLOW_E,
+        methods := {"INVITE", "ACK", "BYE"}
+      },
+      allow_events := omit,
+      answer_mode := omit,
+      authenticationInfo := omit,
+      authorization := omit,
+      callId := callid,
+      callInfo := omit,
+      contact := T_contact,
+      contentDisposition := omit,
+      contentEncoding := omit,
+      contentLanguage := omit,
+      contentLength := omit, //{fieldName := CONTENT_LENGTH_E, len := 0},
+      contentType := omit, //{
+      //  fieldName := CONTENT_TYPE_E,
+      //  mediaType:= "application/sdp"
+      //},
+      conversation_ID := omit,
+      contribution_ID := omit,
+      cSeq :={
+        fieldName:=CSEQ_E,
+        seqNumber:=1,
+        method:="INVITE"
+        },
+      date := omit,
+      diversion:=omit,
+      errorInfo  := omit,
+      event := omit,
+      expires := omit,
+      feature_caps := omit,
+      fromField := fromfield,
+      geolocation := omit,
+      geolocation_routing := omit,
+      geolocation_error := omit,
+      historyInfo := omit,
+      info_Package := omit,
+      inReplyTo := omit,
+      inReplyTo_contribution_ID := omit,
+      join:=omit,
+      maxForwards :={
+        fieldName := MAX_FORWARDS_E,
+        forwards :=  70
+      },
+      message_Expires := omit,
+      message_UID := omit,
+      mimeVersion := omit,
+      minExpires := omit,
+      min_SE := omit,
+      organization := omit,
+      p_access_network_info := omit,
+      p_alerting_mode:=omit,
+      p_answer_state:=omit,
+      p_Area_Info := omit,
+      passertedID:=omit,
+      p_asserted_service := omit,
+      p_associated_uri := omit,
+      p_called_party_id := omit,
+      p_charging_function_address := omit,
+      p_charging_vector := omit,
+      p_DCS_trace_pty_id:=omit,
+      p_DCS_OSPS:=omit,
+      p_DCS_billing_info:=omit,
+      p_DCS_LAES:=omit,
+      p_DCS_redirect:=omit,
+      p_Early_Media := omit,
+      p_last_access_network_info:=omit,
+      p_media_auth:=omit,
+      ppreferredID:=omit,
+      p_preferred_service := omit,
+      p_profile_key:=omit,
+      p_served_user:=omit,
+      p_Service_Indication := omit,
+      p_Service_Notification := omit,
+      p_user_database:=omit,
+      p_visited_network_id := omit,
+      path:=omit,
+      priv_answer_mode:=omit,
+      priority := omit,
+      privacy:=omit,
+      proxyAuthenticate := omit,
+      proxyAuthorization := omit,
+      proxyRequire := omit,
+      rack:=omit,
+      rseq:=omit,
+      reason:=omit,
+      recordRoute := omit,
+      recv_Info := omit,
+      reject_contact:=omit,
+      refer_sub :=omit,
+      refer_to:=omit,
+      referred_by:=omit,
+      replyTo := omit,
+      replaces:=omit,
+      require := omit,
+      request_disp:=omit,
+      resourcePriority := omit,
+      retryAfter := omit,
+      route := omit,
+      security_client:=omit,
+      security_server:=omit,
+      security_verify:=omit,
+      session_expires :=omit,
+      session_id:=omit,
+      session_Replaces := omit,
+      server :=omit,
+      service_route:=omit,
+      sip_ETag:=omit,
+      sip_If_Match:=omit,
+      subject := omit,
+      subscription_state :=omit,
+      supported := {
+        fieldName := SUPPORTED_E,
+        optionsTags := { "timer" }
+      },
+      target_dialog := omit,
+      timestamp := omit,
+      toField := tofield,
+      unsupported := omit,
+      userAgent := {
+        fieldName := USER_AGENT_E,
+        userAgentBody := { "SIPmsg" }
+      },
+      via := T_via,
+      warning := omit,
+      wwwAuthenticate := omit,
+      x_AUT := omit,
+      x_Carrier_Info := omit,
+      x_CHGDelay := omit,
+      x_CHGInfo := omit,
+      x_FCI := omit,
+      undefinedHeader_List := omit
+    },
+    messageBody := omit,
+    payload := omit
+  }
+
+  template PDU_SIP_Request ACK_Request_s_1:={
+    requestLine:={
+      method:=ACK_E,
+      requestUri:=desturl,
+      sipVersion:=cg_SIP_NAME_VERSION
+    },
+    msgHeader:={
+      accept := omit,
+      accept_contact:=omit,
+      acceptEncoding := omit,
+      acceptLanguage := omit,
+      acceptResourcePriority := omit,
+      alertInfo := omit,
+      alert_mode:=omit,
+      allow:=omit,
+      allow_events := omit,
+      answer_mode:=omit,
+      authenticationInfo := omit,
+      authorization := omit,
+      callId := callid,
+      callInfo := omit,
+      contact := omit,
+      contentDisposition := omit,
+      contentEncoding := omit,
+      contentLanguage := omit,
+      contentLength := omit,
+      contentType := omit,
+      conversation_ID := omit,
+      contribution_ID := omit,
+      cSeq :={
+        fieldName:= CSEQ_E,
+          seqNumber:=1,
+          method:="ACK"
+      },
+      date := omit,
+      diversion:=omit,
+      errorInfo  := omit,
+      event := omit,
+      expires := omit,
+      feature_caps := omit,
+      fromField := fromfield,
+      geolocation := omit,
+      geolocation_routing := omit,
+      geolocation_error := omit,
+      historyInfo := omit,
+      info_Package := omit,
+      inReplyTo := omit,
+      inReplyTo_contribution_ID := omit,
+      join:=omit,
+      maxForwards :={
+        fieldName := MAX_FORWARDS_E,
+        forwards :=  70
+      },
+      message_Expires := omit,
+      message_UID := omit,
+      mimeVersion := omit,
+      minExpires := omit,
+      min_SE := omit,
+      organization := omit,
+      p_access_network_info := omit,
+      p_alerting_mode:=omit,
+      p_answer_state:=omit,
+      p_Area_Info := omit,
+      passertedID:=omit,
+      p_asserted_service := omit,
+      p_associated_uri := omit,
+      p_called_party_id := omit,
+      p_charging_function_address := omit,
+      p_charging_vector := omit,
+      p_DCS_trace_pty_id:=omit,
+      p_DCS_OSPS:=omit,
+      p_DCS_billing_info:=omit,
+      p_DCS_LAES:=omit,
+      p_DCS_redirect:=omit,
+      p_Early_Media := omit,
+      p_last_access_network_info:=omit,
+      p_media_auth:=omit,
+      ppreferredID:=omit,
+      p_preferred_service := omit,
+      p_profile_key:=omit,
+      p_served_user:=omit,
+      p_Service_Indication := omit,
+      p_Service_Notification := omit,
+      p_user_database:=omit,
+      p_visited_network_id := omit,
+      path:=omit,
+      priv_answer_mode:=omit,
+      priority := omit,
+      privacy:=omit,
+      proxyAuthenticate := omit,
+      proxyAuthorization := omit,
+      proxyRequire := omit,
+      rack:=omit,
+      rseq:=omit,
+      reason:=omit,
+      recordRoute := omit,
+      recv_Info := omit,
+      reject_contact:=omit,
+      refer_sub :=omit,
+      refer_to:=omit,
+      referred_by:=omit,
+      replyTo := omit,
+      replaces:=omit,
+      require := omit,
+      request_disp:=omit,
+      resourcePriority := omit,
+      retryAfter := omit,
+      route := omit,
+      security_client:=omit,
+      security_server:=omit,
+      security_verify:=omit,
+      session_expires :=omit,
+      session_id:=omit,
+      session_Replaces := omit,
+      server :=omit,
+      service_route:=omit,
+      sip_ETag:=omit,
+      sip_If_Match:=omit,
+      subject := omit,
+      subscription_state :=omit,
+      supported:=omit,
+      target_dialog := omit,
+      timestamp := omit,
+      toField := tofield,
+      unsupported := omit,
+      userAgent := {
+        fieldName := USER_AGENT_E,
+        userAgentBody := { "SIPmsg" }
+      },
+      via := T_via_2,
+      warning := omit,
+      wwwAuthenticate := omit,
+      x_AUT := omit,
+      x_Carrier_Info := omit,
+      x_CHGDelay := omit,
+      x_CHGInfo := omit,
+      x_FCI := omit,
+      undefinedHeader_List := omit
+    },
+    messageBody:=omit,
+    payload:=omit
+  }
+
+  template PDU_SIP_Request BYE_Request_s_1:={
+    requestLine:={
+      method:=BYE_E,
+      requestUri:=desturl,
+      sipVersion:=cg_SIP_NAME_VERSION
+    },
+    msgHeader:={
+      accept := omit,
+      accept_contact:=omit,
+      acceptEncoding := omit,
+      acceptLanguage := omit,
+      acceptResourcePriority := omit,
+      alertInfo := omit,
+      alert_mode:=omit,
+      allow:=omit,
+      allow_events := omit,
+      answer_mode:=omit,
+      authenticationInfo := omit,
+      authorization := omit,
+      callId := callid,
+      callInfo := omit,
+      contact := omit,
+      contentDisposition := omit,
+      contentEncoding := omit,
+      contentLanguage := omit,
+      contentLength := omit,
+      contentType := omit,
+      conversation_ID := omit,
+      contribution_ID := omit,
+      cSeq :={
+        fieldName:= CSEQ_E,
+          seqNumber:=111,
+          method:="BYE"
+      },
+      date := omit,
+      diversion:=omit,
+      errorInfo  := omit,
+      event := omit,
+      expires := omit,
+      feature_caps := omit,
+      fromField := fromfield,
+      geolocation := omit,
+      geolocation_routing := omit,
+      geolocation_error := omit,
+      historyInfo := omit,
+      info_Package := omit,
+      inReplyTo := omit,
+      inReplyTo_contribution_ID := omit,
+      join:=omit,
+      maxForwards :={
+        fieldName := MAX_FORWARDS_E,
+        forwards :=  70
+      },
+      mimeVersion := omit,
+      message_Expires := omit,
+      message_UID := omit,
+      minExpires := omit,
+      min_SE := omit,
+      organization := omit,
+      p_access_network_info := omit,
+      p_alerting_mode:=omit,
+      p_answer_state:=omit,
+      p_Area_Info := omit,
+      passertedID:=omit,
+      p_asserted_service := omit,
+      p_associated_uri := omit,
+      p_called_party_id := omit,
+      p_charging_function_address := omit,
+      p_charging_vector := omit,
+      p_DCS_trace_pty_id:=omit,
+      p_DCS_OSPS:=omit,
+      p_DCS_billing_info:=omit,
+      p_DCS_LAES:=omit,
+      p_DCS_redirect:=omit,
+      p_Early_Media := omit,
+      p_last_access_network_info:=omit,
+      p_media_auth:=omit,
+      ppreferredID:=omit,
+      p_preferred_service := omit,
+      p_profile_key:=omit,
+      p_served_user:=omit,
+      p_Service_Indication := omit,
+      p_Service_Notification := omit,
+      p_user_database:=omit,
+      p_visited_network_id := omit,
+      path:=omit,
+      priv_answer_mode:=omit,
+      priority := omit,
+      privacy:=omit,
+      proxyAuthenticate := omit,
+      proxyAuthorization := omit,
+      proxyRequire := omit,
+      rack:=omit,
+      rseq:=omit,
+      reason:=omit,
+      recordRoute := omit,
+      recv_Info := omit,
+      reject_contact:=omit,
+      refer_sub :=omit,
+      refer_to:=omit,
+      referred_by:=omit,
+      replyTo := omit,
+      replaces:=omit,
+      require := omit,
+      request_disp:=omit,
+      resourcePriority := omit,
+      retryAfter := omit,
+      route := omit,
+      security_client:=omit,
+      security_server:=omit,
+      security_verify:=omit,
+      session_expires :=omit,
+      session_id:=omit,
+      session_Replaces := omit,
+      server :=omit,
+      service_route:=omit,
+      sip_ETag:=omit,
+      sip_If_Match:=omit,
+      subject := omit,
+      subscription_state :=omit,
+      supported:=omit,
+      target_dialog := omit,
+      timestamp := omit,
+      toField := tofield,
+      unsupported := omit,
+      userAgent := {
+        fieldName := USER_AGENT_E,
+        userAgentBody := { "SIPmsg" }
+      },
+      via := T_via_3,
+      warning := omit,
+      wwwAuthenticate := omit,
+      x_AUT := omit,
+      x_Carrier_Info := omit,
+      x_CHGDelay := omit,
+      x_CHGInfo := omit,
+      x_FCI := omit,
+      undefinedHeader_List := omit
+    },
+    messageBody:=omit,
+    payload:=omit
+  }
+
+  template PDU_SIP_Request NOTIFY_Request_s_2:={
+    requestLine  :={
+      method := NOTIFY_E,
+      requestUri := desturl,
+      sipVersion := cg_SIP_NAME_VERSION
+    },
+    msgHeader :={
+      accept := omit,
+      accept_contact:=omit,
+      acceptEncoding := omit,
+      acceptLanguage := omit,
+      acceptResourcePriority := omit,
+      alertInfo := omit,
+      alert_mode:=omit,
+      allow := omit,
+      allow_events :={
+        fieldName := ALLOW_EVENTS_E,
+        events:= {
+          {
+            event_package:="pack",
+            event_templates:={"t1","t2"}
+          },
+          {
+            event_package:="pack3",
+            event_templates:={"t3","t5"}
+          }
+        }
+      },
+      answer_mode:=omit,
+      authenticationInfo := omit,
+      authorization := omit,
+      callId := callid,
+      callInfo := omit,
+      contact := T_contact,
+      contentDisposition := omit,
+      contentEncoding := omit,
+      contentLanguage := omit,
+      contentLength :={
+        fieldName := CONTENT_LENGTH_E,
+        len := 0
+      },
+      contentType := {
+        fieldName := CONTENT_TYPE_E,
+        mediaType:= "application/sdp"
+      },
+      conversation_ID := omit,
+      contribution_ID := omit,
+      cSeq :={
+        fieldName:=CSEQ_E,
+        seqNumber:=1,
+        method:="INVITE"
+      },
+      date := omit,
+      diversion:=omit,
+      errorInfo  := omit,
+      event :={
+        fieldName := EVENT_E,
+          event_type :={
+            event_package:="pack",
+            event_templates:={"t1","t2"}
+          },
+          event_params :={
+          {
+            id:="p1",
+            paramValue:="a1"
+          },
+          {
+            id:="p2",
+            paramValue:="a2"
+          }
+        }
+      },
+      expires := omit,
+      feature_caps := omit,
+      fromField := fromfield,
+      geolocation := omit,
+      geolocation_routing := omit,
+      geolocation_error := omit,
+      historyInfo := {
+        fieldName := HISTORY_INFO_E,
+          hi_entries :={
+          {
+            nameAddr :={
+              displayName:= PX_ETS_LOCAL_USER,
+              addrSpec :={
+                scheme := "sipka",
+                userInfo :={
+                  userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+                  password:= omit
+                 },
+                hostPort :={
+                  host:= PX_ETS_IPADDR,
+                  portField:= omit
+                },
+                urlParameters:= omit,
+                headers:= omit
+              }
+            },
+            hi_params :={
+              {
+                id:="p1",
+                paramValue:="a1"
+              },
+              {
+                id:="p2",
+                paramValue:="a2"
+              }
+            }
+          }
+        }
+      },
+      info_Package := omit,
+      inReplyTo := omit,
+      inReplyTo_contribution_ID := omit,
+      join:=omit,
+      maxForwards :={
+        fieldName := MAX_FORWARDS_E,
+        forwards :=  70
+      },
+      message_Expires := omit,
+      message_UID := omit,
+      mimeVersion := omit,
+      minExpires := omit,
+      min_SE :={
+        fieldName := MIN_SE_E,
+        deltaSec:= "231",
+        params:=omit
+      },
+      organization := omit,
+      p_access_network_info :={
+        fieldName := P_ACCESS_NETWORK_INFO,
+        access_net_specs := {
+          {
+            access_type:= "3GPP-GERAN",
+              access_info:={
+              {
+                id:="cgi-3gpp",paramValue:="probation"
+              },
+              {
+                id:="utran-cell-id-3gpp",paramValue:="\"hali ho1\""
+              }
+            }
+          },
+          {
+            access_type:= "3GPP-GERAN",
+            access_info:={
+              {
+                id:="cgi-3gpp",paramValue:="probation"
+              },
+              {
+                id:="utran-cell-id-3gpp",paramValue:="\"hali ho2\""
+              }
+            }
+          }
+        }
+      },
+      p_alerting_mode:=omit,
+      p_answer_state:=omit,
+      p_Area_Info := omit,
+      passertedID:=omit,
+      p_asserted_service := omit,
+      p_associated_uri :={
+        fieldName := P_ASSOCIATED_URI,
+        p_assoc_uris :={
+          {
+            p_asso_uri :={
+              displayName:= PX_ETS_LOCAL_USER,
+              addrSpec :={
+                scheme := "sip",
+                userInfo :={
+                  userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+                  password:= omit
+                },
+                hostPort :={
+                  host:= PX_ETS_IPADDR,
+                  portField:= omit
+                },
+                urlParameters:= omit,
+                headers:= omit
+              }
+            },
+            ai_params:=omit
+          },
+          {
+            p_asso_uri :={
+              displayName:= PX_ETS_LOCAL_USER,
+              addrSpec :={
+                scheme := "sipka",
+                userInfo :={
+                  userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+                  password:= omit
+                },
+                hostPort :={
+                  host:= PX_ETS_IPADDR,
+                  portField:= omit
+                },
+                urlParameters:= omit,
+                headers:= omit
+              }
+            },
+            ai_params :={
+              {
+                id:="p1",
+                paramValue:="a1"
+              },
+              {
+                id:="p2",
+                paramValue:="a2"
+              }
+            }
+          }
+        }
+      },
+      p_called_party_id :={
+        fieldName := P_CALLED_PARTY_ID,
+        called_pty_id :={
+          displayName:= PX_ETS_LOCAL_USER,
+          addrSpec :={
+            scheme := "sip",
+            userInfo :={
+              userOrTelephoneSubscriber:= PX_ETS_LOCAL_USER,
+              password:= omit
+            },
+            hostPort :={
+              host:= PX_ETS_IPADDR ,
+              portField:= omit
+            },
+            urlParameters:= omit,
+            headers:= omit
+          }
+        },
+        cpid_param:=omit
+      },
+      p_charging_function_address :={
+        fieldName := P_CHARGING_FUNCTION_ADDRESS,
+        charge_addr_params:={
+          {
+            id:="ccf",
+              paramValue:="ejnye"
+          }
+        }
+      },
+      p_charging_vector :={
+        fieldName := P_CHARGING_VECTOR,
+        icid_value:= "bejnye",
+        charge_params :={
+          {
+            id:="cgi-3gpp",
+            paramValue:="probation"
+          },
+          {
+            id:="utran-cell-id-3gpp",
+            paramValue:="\"hali ho\""
+          }
+        }
+      },
+      p_DCS_trace_pty_id:=omit,
+      p_DCS_OSPS:=omit,
+      p_DCS_billing_info:=omit,
+      p_DCS_LAES:=omit,
+      p_DCS_redirect:=omit,
+      p_Early_Media := omit,
+      p_last_access_network_info:=omit,
+      p_media_auth:=omit,
+      ppreferredID:=omit,
+      p_preferred_service := omit,
+      p_profile_key:=omit,
+      p_served_user:=omit,
+      p_Service_Indication := omit,
+      p_Service_Notification := omit,
+      p_user_database:=omit,
+      p_visited_network_id :={
+        fieldName := P_VISITED_NETWORK_ID,
+        vnetworks :={
+          {
+            network_id:= "Net1",
+            network_par:=omit
+          },
+          {
+            network_id:= "\"Mobil a buli\"",
+            network_par :={
+              {
+                id:="cgi-3gpp",
+                paramValue:="probation"
+              },
+              {
+                id:="utran-cell-id-3gpp",
+                paramValue:="\"hali ho\""
+              }
+            }
+          }
+        }
+      },
+      path:=omit,
+      priv_answer_mode:=omit,
+      priority := omit,
+      privacy:=omit,
+      proxyAuthenticate := omit,
+      proxyAuthorization := omit,
+      proxyRequire := omit,
+      rack:=omit,
+      rseq:=omit,
+      reason:=omit,
+      recordRoute := omit,
+      recv_Info := omit,
+      reject_contact:=omit,
+      refer_sub :={
+        fieldName :=REFER_SUB_E,
+        refer_sub_value:="nade",
+        refer_sub_param:=omit
+      },
+      refer_to:=omit,
+      referred_by:=omit,
+      replyTo := omit,
+      replaces:=omit,
+      require := omit,
+      request_disp:=omit,
+      resourcePriority := omit,
+      retryAfter := omit,
+      route := omit,
+      security_client:=omit,
+      security_server:=omit,
+      security_verify:=omit,
+      session_expires :={
+        fieldName := SESSION_EXPIRES_E,
+        deltaSec:= "123",
+        se_params:=omit
+      },
+      session_id:=omit,
+      session_Replaces := omit,
+      server :={
+        fieldName := SERVER_E,
+        serverBody := {"Server:PoC-client/OMA1.0"}
+      },
+      service_route:=omit,
+      sip_ETag:=omit,
+      sip_If_Match:=omit,
+      subject := omit,
+      subscription_state :={
+        fieldName := SUBSCRIPTION_STATE_E,
+        substate_value:= "active",
+        subexp_params:=omit
+      },
+      supported := omit,
+      target_dialog := omit,
+      timestamp := omit,
+      toField := tofield,
+      unsupported := omit,
+      userAgent := {
+        fieldName := USER_AGENT_E,
+        userAgentBody := { "SJLabs-SJPhone/1.0" }
+      },
+      via := T_via,
+      warning := omit,
+      wwwAuthenticate := omit,
+      x_AUT := omit,
+      x_Carrier_Info := omit,
+      x_CHGDelay := omit,
+      x_CHGInfo := omit,
+      x_FCI := omit,
+      undefinedHeader_List := omit
+    },
+    messageBody := "haliho",
+    payload := omit
+  }
+
+  template PDU_SIP_Response T_ringing :={
+    statusLine :={
+      sipVersion:=?,
+      statusCode:= 180,
+      reasonPhrase:=?
+    },
+    msgHeader:=?,
+    messageBody:=*,
+    payload:=*
+  }
+
+  template PDU_SIP_Response T_OK_r :={
+    statusLine :={
+      sipVersion:=?,
+      statusCode:= 200,
+      reasonPhrase:=?
+    },
+    msgHeader:=?,
+    messageBody:=*,
+    payload:=*
+  }
 
 }
-}with {extension "version R15A"}
+}with {extension "version R16C"}

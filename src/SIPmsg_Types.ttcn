@@ -18,16 +18,16 @@
 ******************************************************************************/
 //
 //  File:               SIPmsg_Types.ttcn
-//  Rev:                R15A
+//  Rev:                R17B
 //  Prodnr:             CNL 113 319
-//  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323, 
+//  Reference:          RFC3261, RFC2806, RFC2976, RFC3262, RFC3311, RFC3323,
 //                      RFC3325, RFC3326, RFC3265, RFC3455, RFC4244, RFC4538,
-//                      RFC6442, RFC6086, RFC6050 
+//                      RFC6442, RFC6086, RFC6050
 //                      IETF Draft draft-ietf-dip-session-timer-15.txt,
 //                      IETF Draft draft-levy-sip-diversion-08.txt, RFC5009,
 //                      IETF draft-ott-sip-serv-indication-notification-00,
 //                      IETF draft-holmberg-sipcore-proxy-feature-04,
-//                      531/0363-FCP 101 5091   
+//                      531/0363-FCP 101 5091
 
 module SIPmsg_Types
 {
@@ -35,36 +35,36 @@ module SIPmsg_Types
   modulepar boolean tsp_SIPmsg_ipv6enabled := true;
   modulepar boolean tsp_SIPmsg_wildcarded_uri_enabled := false;
   modulepar SIPmsg_body_handling_modes tsp_SIPmsg_binary_body_mode := COMPATIBLE;
-  
+
   external function f_SIP_encode(in PDU_SIP pdu) return charstring;
   external function f_SIP_encode_binary(in PDU_SIP pdu) return octetstring;
   external function f_SIP_encode_fragment(in PDU_SIP_Fragment pdu)
     return charstring;
   external function f_SIP_encode_fragment_formatted(
-    in PDU_SIP_Fragment pdu, 
-    in boolean short_headers, 
+    in PDU_SIP_Fragment pdu,
+    in boolean short_headers,
     in boolean multiple_headers,
     in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled) return charstring;
   external function f_SIP_encode_formatted(
-    in PDU_SIP pdu, 
-    in boolean short_headers, 
+    in PDU_SIP pdu,
+    in boolean short_headers,
     in boolean multiple_headers,
     in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled) return charstring;
   external function f_SIP_encode_formatted_binary(
-    in PDU_SIP pdu, 
-    in boolean short_headers, 
+    in PDU_SIP pdu,
+    in boolean short_headers,
     in boolean multiple_headers,
     in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled) return octetstring;
   external function f_SIP_decode(in charstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled) return PDU_SIP;
   external function f_SIP_decode_binary(in octetstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled, in SIPmsg_body_handling_modes body_mode:=tsp_SIPmsg_binary_body_mode) return PDU_SIP;
-  external function f_SIP_decode_fragment(in charstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled) 
+  external function f_SIP_decode_fragment(in charstring pdu, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled)
     return PDU_SIP_Fragment;
 
   external function f_SIP_decode_backtrack(in charstring pdu, out PDU_SIP msg,in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled)
   external function f_SIP_decode_binary_backtrack(in octetstring pdu, out PDU_SIP msg, in boolean ipv6enabled := tsp_SIPmsg_ipv6enabled, in boolean wildcarded_uri:=tsp_SIPmsg_wildcarded_uri_enabled, in SIPmsg_body_handling_modes body_mode:=tsp_SIPmsg_binary_body_mode)
-    
+
   const MessageHeader c_SIP_msgHeader_empty :=
-  { 
+  {
     accept                := omit,
     accept_contact        := omit,
     acceptEncoding        := omit,
@@ -85,6 +85,8 @@ module SIPmsg_Types
     contentLanguage       := omit,
     contentLength         := omit,
     contentType           := omit,
+    conversation_ID       := omit,
+    contribution_ID       := omit,
     cSeq                  := omit,
     date                  := omit,
     diversion             := omit,
@@ -97,10 +99,13 @@ module SIPmsg_Types
     geolocation_routing   := omit,
     geolocation_error     := omit,
     historyInfo           := omit,
-    info_Package          := omit, 
+    info_Package          := omit,
     inReplyTo             := omit,
+    inReplyTo_contribution_ID := omit,
     join                  := omit,
     maxForwards           := omit,
+    message_Expires       := omit,
+    message_UID           := omit,
     mimeVersion           := omit,
     min_SE                := omit,
     minExpires            := omit,
@@ -130,7 +135,7 @@ module SIPmsg_Types
     p_profile_key         := omit,
     p_served_user         := omit,
     p_Service_Indication  := omit,
-    p_Service_Notification := omit,   
+    p_Service_Notification := omit,
     p_user_database       := omit,
     priority              := omit,
     priv_answer_mode      := omit,
@@ -148,7 +153,7 @@ module SIPmsg_Types
     rseq                  := omit,
     reason                := omit,
     recordRoute           := omit,
-    recv_Info             := omit,    
+    recv_Info             := omit,
     replyTo               := omit,
     require               := omit,
     resourcePriority      := omit,
@@ -161,6 +166,7 @@ module SIPmsg_Types
     service_route         := omit,
     session_expires       := omit,
     session_id            := omit,
+    session_Replaces      := omit,
     sip_ETag              := omit,
     sip_If_Match          := omit,
     subscription_state    := omit,
@@ -171,7 +177,7 @@ module SIPmsg_Types
     toField               := omit,
     userAgent             := omit,
     unsupported           := omit,
-    via	                  := omit,
+    via                   := omit,
     warning               := omit,
     wwwAuthenticate       := omit,
     x_AUT                 := omit,
@@ -204,6 +210,8 @@ module SIPmsg_Types
     contentLanguage := *,
     contentLength := *,
     contentType := *,
+    conversation_ID := *,
+    contribution_ID := *,
     cSeq := *,
     date := *,
     diversion := *,
@@ -218,10 +226,13 @@ module SIPmsg_Types
     historyInfo := *,
     info_Package := *,
     inReplyTo := *,
+    inReplyTo_contribution_ID := *,
     join := *,
     maxForwards := *,
+    message_Expires := *,
+    message_UID := *,
     mimeVersion := *,
-    minExpires := *, 
+    minExpires := *,
     min_SE := *,
     organization := *,
     p_access_network_info := *,
@@ -248,7 +259,7 @@ module SIPmsg_Types
     p_last_access_network_info := *,
     p_media_auth := *,
     ppreferredID := *,
-    p_preferred_service := *, 
+    p_preferred_service := *,
     p_visited_network_id := *,
     path := *,
     priv_answer_mode := *,
@@ -261,7 +272,7 @@ module SIPmsg_Types
     rseq := *,
     reason := *,
     recordRoute := *,
-    recv_Info := *,        
+    recv_Info := *,
     reject_contact := *,
     refer_sub := *,
     refer_to := *,
@@ -280,6 +291,7 @@ module SIPmsg_Types
     server := *,
     service_route := *,
     session_id := *,
+    session_Replaces := *,
     sip_ETag := *,
     sip_If_Match := *,
     subject := *,
@@ -319,7 +331,7 @@ group AdressTypes
     integer         portField optional,     // represented as an integer
     boolean         tcporudp optional  // true if TCP false if UDP
   }
-  
+
   type enumerated SIP_com_prot{UNCHANGED_E,TCP_E,UDP_E,SCTP_E, TLS_E}
 
   type record SIP_comm_adress
@@ -351,7 +363,7 @@ group Types
       SIP_OP_SEND
     }
   }
-  
+
   group SubTypes{// Subtypes
 
     group TokenTypes // TokensTypes
@@ -379,22 +391,27 @@ group Types
         CONTENT_LANGUAGE_E,
         CONTENT_LENGTH_E,
         CONTENT_TYPE_E,
+        CONTRIBUTION_ID_E, // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
+        CONVERSATION_ID_E, // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
         CSEQ_E,
         DATE_E,
         DIVERSION_E,      // IETF draft-levy-sip-diversion-08.txt
         ERROR_INFO_E,
         EXPIRES_E,
         EVENT_E,         // RFC3265
-	FEATURE_CAPS_E,  // draft-holmberg-sipcore-proxy-feature-04
+        FEATURE_CAPS_E,  // draft-holmberg-sipcore-proxy-feature-04
         FROM_E,
         GEOLOCATION_E,   // RFC6442
         GEOLOCATION_ROUTING_E,
         GEOLOCATION_ERROR_E,
-        HISTORY_INFO_E,  // RFC4244 
-	INFO_PACKAGE_E,  // RFC6086
+        HISTORY_INFO_E,  // RFC4244
+        INFO_PACKAGE_E,  // RFC6086
         IN_REPLY_TO_E,
+        INREPLYTO_CONTRIBUTION_ID_E, // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
         JOIN_E,           //RFC3911
         MAX_FORWARDS_E,
+        MESSAGE_EXPIRES_E, // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
+        MESSAGE_UID_E, // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
         MIME_VERSION_E,
         MIN_EXPIRES_E,
         MIN_SE_E,          // RFC draft-ietf-sip-session-timer-15
@@ -402,9 +419,9 @@ group Types
         P_ACCESS_NETWORK_INFO,  // RFC 3455, 3GPP 24.229 V8.7.0
         P_ALERTING_MODE_E, // RFC draft-allen-sipping-poc-p-headers-01
         P_ANSWER_STATE_E, // RFC draft-allen-sipping-poc-p-headers-01
-	P_AREA_INFO_E,  // 531/0363-FCP 101 5091 
+        P_AREA_INFO_E,  // 531/0363-FCP 101 5091
         P_ASSERTED_ID_E,
-	P_ASSERTED_SERVICE_E, // RFC 6050
+        P_ASSERTED_SERVICE_E, // RFC 6050
         P_ASSOCIATED_URI,  // RFC 3455
         P_CALLED_PARTY_ID, // RFC 3455
         P_CHARGING_VECTOR, // RFC 3455
@@ -418,11 +435,11 @@ group Types
         P_LAST_ACCESS_NETWORK_INFO,  // T-Mobile specific
         P_MEDIA_AUTH_E,   // RFC3313
         P_PREFERRED_ID_E,
-	P_PREFERRED_SERVICE_E, // RFC 6050
+        P_PREFERRED_SERVICE_E, // RFC 6050
         P_PROFILE_KEY_E, // RFC5002
         P_SERVED_USER_E, // RFC5502
-	P_SERVICE_INDICATION_E, // IETF draft-ott-sip-serv-indication-notification-00
-	P_SERVICE_NOTIFICATION_E, // IETF draft-ott-sip-serv-indication-notification-00
+        P_SERVICE_INDICATION_E, // IETF draft-ott-sip-serv-indication-notification-00
+        P_SERVICE_NOTIFICATION_E, // IETF draft-ott-sip-serv-indication-notification-00
         P_USER_DATABASE_E, // RFC4457
         P_VISITED_NETWORK_ID,  // RFC 3455
         PATH_E,          // RFC3327
@@ -439,7 +456,7 @@ group Types
         RSEQ_E,          // RFC 3262
         REASON_E,        // RFC 3326
         RECORD_ROUTE_E,
-	RECV_INFO_E,      // RFC 6086
+        RECV_INFO_E,      // RFC 6086
         REJECT_CONTACT_E, // RFC3841
         REPLY_TO_E,
         REPLACES_E,      // RFC3891
@@ -453,6 +470,7 @@ group Types
         SECURITY_VERIFY_E,  //RFC3329
         SESSION_EXPIRES_E,  // RFC draft-ietf-sip-session-timer-15
         SESSION_ID_E,      // RFC draft-kaplan-sip-session-id-02
+        SESSION_REPLACES_E,  // OMA-TS-CPM_Conv_Fnct-V1_0-20101012-C
         SERVER_E,
         SERVICE_ROUTE_E,  // RFC3608
         SIP_ETAG_E,        // RFC3903
@@ -460,7 +478,7 @@ group Types
         SUBJECT_E,
         SUBSCRIPTION_STATE_E, // RFC3265
         SUPPORTED_E,
-	TARGET_DIALOG_E, // RFC4538
+        TARGET_DIALOG_E, // RFC4538
         TIMESTAMP_E,
         TO_E,
         UNSUPPORTED_E,
@@ -468,9 +486,9 @@ group Types
         VIA_E,
         WARNING_E,
         WWW_AUTHENTICATE_E,
-	X_AUT_E,
-	X_CARRIER_INFO_E,
-	X_CHGDELAY_E,
+        X_AUT_E,
+        X_CARRIER_INFO_E,
+        X_CHGDELAY_E,
         X_CHGINFO_E,
         X_FCI_E
       }
@@ -515,7 +533,7 @@ group Types
 
       // [?]
       type GenericParam_List CommaParam_List;
-      
+
       type set of SemicolonParam_List Contact_list;
 
       // [20.10, 20.20, 20.30, 20.31, 20.34, 20.39, 20.42, 20.43]
@@ -581,7 +599,7 @@ group Types
 
       // [20.27, 20.44, .......10.32, 10.48; RFC2616 14.33, 14.47; RFC2617 1.2]
       type set of Challenge Challenge_list;
-      
+
       type union Challenge
       {
         CommaParam_List digestCln,
@@ -599,8 +617,8 @@ group Types
       type union Addr_Union
       {
         NameAddr    nameAddr,
-        SipUrl      addrSpecUnion // STS: "Union" added to filed name to 
-        // avoid dangerous name equivalence with 
+        SipUrl      addrSpecUnion // STS: "Union" added to filed name to
+        // avoid dangerous name equivalence with
         // 2nd NameAddr field
       }
 
@@ -615,7 +633,7 @@ group Types
 
       // [20.10]
       type set of ContactAddress ContactAddress_List; // 1 or more elements
-      
+
       // [20.10]
       type union ContactBody
       {
@@ -751,10 +769,10 @@ group Types
         charstring            network_id,
         SemicolonParam_List   network_par optional
       }
-      
+
       // [RFC3455 5.4] + 3GPP 24.229 V8.7.0
       type set of Access_net_spec Access_net_spec_list;
-      
+
       type record Access_net_spec
       {
         charstring          access_type,
@@ -845,9 +863,9 @@ group Types
 
       // [20.43]
       type set of WarningValue WarningValue_List;
-      
+
       type set of charstring Service_ID_List;
-                          
+
     } // end group TokensType
 
 
@@ -997,7 +1015,18 @@ group Types
         charstring          mediaType
       }
 
-      // [20.16]
+      type record Contribution_ID
+      {
+        FieldName           fieldName (CONTRIBUTION_ID_E),
+        charstring          contributionid
+      }
+
+      type record Conversation_ID
+      {
+        FieldName           fieldName (CONVERSATION_ID_E),
+        charstring          conversationid
+      }
+
       type record CSeq
       {
         FieldName           fieldName (CSEQ_E),
@@ -1019,7 +1048,7 @@ group Types
         FieldName                 fieldName (DIVERSION_E),
         Diversion_params_list     divParams
       }
-      
+
       // [20.18]
       type record ErrorInfo
       {
@@ -1051,12 +1080,12 @@ group Types
       }
 
       type set of FC_Value FC_Value_List;
-      
-      type record FC_Value  
+
+      type record FC_Value
       {
-        charstring          fc_string, // "*"                   
-	SemicolonParam_List feature_param optional       
-      }   
+        charstring          fc_string, // "*"
+        SemicolonParam_List feature_param optional
+      }
 
       // [20.20]
       type record From
@@ -1066,15 +1095,15 @@ group Types
         SemicolonParam_List fromParams optional
       }
 
-      
+
       type record Geolocation
       {
         FieldName           fieldName (GEOLOCATION_E),
         Location_value_list location_values
       }
-      
+
       type set of Location_value Location_value_list;
-      
+
       type record Location_value
       {
         SipUrl              location_uri,
@@ -1104,22 +1133,28 @@ group Types
       // RFC6086
       type record Info_Package
       {
-        FieldName                 fieldName (INFO_PACKAGE_E),     
+        FieldName                 fieldName (INFO_PACKAGE_E),
         Info_Package_Type         info_Package_Type
       }
-      
+
       type record Info_Package_Type
       {
         charstring                info_package_name,
-        SemicolonParam_List       info_package_params optional	        
+        SemicolonParam_List       info_package_params optional
       }
 
-     
+
       // [20.21]
       type record InReplyTo
       {
         FieldName           fieldName (IN_REPLY_TO_E),
         CallidString_List   callids
+      }
+
+      type record InReplyTo_contribution_ID
+      {
+        FieldName           fieldName (INREPLYTO_CONTRIBUTION_ID_E),
+        charstring          contributionid
       }
 
       // RFC3911
@@ -1135,6 +1170,18 @@ group Types
       {
         FieldName           fieldName (MAX_FORWARDS_E),
         integer             forwards  // this field is represented as an integer
+      }
+
+      type record Message_Expires
+      {
+        FieldName           fieldName (MESSAGE_EXPIRES_E),
+        DeltaSec            deltaSec
+      }
+
+      type record Message_UID
+      {
+        FieldName           fieldName (MESSAGE_UID_E),
+        charstring          uniqueid
       }
 
       // [20.23]
@@ -1173,7 +1220,7 @@ group Types
       {
         FieldName             fieldName (P_ACCESS_NETWORK_INFO),
         Access_net_spec_list  access_net_specs
-      }           
+      }
 
       // [RFC draft-allen-sipping-poc-p-headers-01]
       type record P_Answer_State
@@ -1186,10 +1233,10 @@ group Types
       // 531/0363-FCP 101 5091
       type record P_Area_Info
       {
-        FieldName           fieldName (P_AREA_INFO_E),       
-        SemicolonParam_List p_Area_Info_Value          
-      }     
-      
+        FieldName           fieldName (P_AREA_INFO_E),
+        SemicolonParam_List p_Area_Info_Value
+      }
+
       // [RFC draft-allen-sipping-poc-p-headers-01]
       type record P_Alerting_Mode
       {
@@ -1204,12 +1251,12 @@ group Types
         FieldName           fieldName (P_ASSERTED_ID_E),
         Identity_List       ids
       }
-      
+
       // [RFC6050]
       type record P_Asserted_Service
       {
         FieldName           fieldName (P_ASSERTED_SERVICE_E),
-        Service_ID_List     p_as           	        
+        Service_ID_List     p_as
       }
 
       // [RFC3455 4.1]
@@ -1295,7 +1342,7 @@ group Types
       {
         FieldName             fieldName (P_LAST_ACCESS_NETWORK_INFO),
         Access_net_spec_list  access_net_specs
-      }           
+      }
 
       // RFC3313
       type record P_Media_Auth
@@ -1310,20 +1357,20 @@ group Types
         FieldName           fieldName (P_PREFERRED_ID_E),
         Identity_List       ids
       }
-      
+
       // [RFC6050]
       type record P_Preferred_Service
       {
         FieldName           fieldName (P_PREFERRED_SERVICE_E),
-        Service_ID_List     p_ps           	        
+        Service_ID_List     p_ps
       }
-      
+
       // [RFC5502]
       type record P_Profile_Key
       {
         FieldName           fieldName (P_PROFILE_KEY_E),
         Addr_Union          profile_key,
-        SemicolonParam_List profile_key_params optional        
+        SemicolonParam_List profile_key_params optional
       }
 
       // [RFC5502]
@@ -1331,23 +1378,23 @@ group Types
       {
         FieldName           fieldName (P_SERVED_USER_E),
         Addr_Union          served_user,
-        SemicolonParam_List served_user_params optional        
+        SemicolonParam_List served_user_params optional
       }
-      
+
       // IETF draft-ott-sip-serv-indication-notification-00
       type record P_Service_Indication
-      { 
+      {
         FieldName           fieldName (P_SERVICE_INDICATION_E),
-        charstring          service_indication	                
-      }   
-         
+        charstring          service_indication
+      }
+
       // IETF draft-ott-sip-serv-indication-notification-00
       type record P_Service_Notification
-      {      
-        FieldName           fieldName (P_SERVICE_NOTIFICATION_E),      
-        charstring          service_notification    
+      {
+        FieldName           fieldName (P_SERVICE_NOTIFICATION_E),
+        charstring          service_notification
       }
-      
+
       // RFC4457
       type record P_User_Database
       {
@@ -1422,8 +1469,8 @@ group Types
         charstring          method
       }
 
-      type record of Info_Package_Type Info_Package_List;     
-         
+      type record of Info_Package_Type Info_Package_List;
+
       // [RFC 4488]
       type record Refer_Sub
       {
@@ -1436,7 +1483,7 @@ group Types
       {
         FieldName           fieldName (REFER_TO_E),
         Addr_Union          addr,
-        SemicolonParam_List referToParams optional        
+        SemicolonParam_List referToParams optional
       }
 
       // RFC3892
@@ -1444,7 +1491,7 @@ group Types
       {
         FieldName           fieldName (REFERRED_BY_E),
         Addr_Union          referer_uri,
-        SemicolonParam_List refererParams optional        
+        SemicolonParam_List refererParams optional
       }
 
       // RFC 3262
@@ -1468,14 +1515,14 @@ group Types
         FieldName           fieldName (RECORD_ROUTE_E),
         RouteBody_List      routeBody
       }
-      
+
       // RFC6086
       type record Recv_Info
       {
-        FieldName           fieldName (RECV_INFO_E),      
+        FieldName           fieldName (RECV_INFO_E),
         Info_Package_List   info_Package_List optional
       }
-       
+
       // RFC3841
       type record Reject_contact
       {
@@ -1565,6 +1612,12 @@ group Types
         SemicolonParam_List se_params optional
       }
 
+      type record Session_Replaces
+      {
+        FieldName           fieldName (SESSION_REPLACES_E),
+        charstring          sessionreplaces
+      }
+
       // [RFC draft-kaplan-sip-session-id-02]
       type record Session_ID
       {
@@ -1626,10 +1679,10 @@ group Types
       // RFC 4538
       type record Target_Dialog
       {
-        FieldName           fieldName (TARGET_DIALOG_E),      
+        FieldName           fieldName (TARGET_DIALOG_E),
         charstring          callid,
-	SemicolonParam_List td_params  optional 
-      }      
+        SemicolonParam_List td_params  optional
+      }
 
       // [20.38]
       type record Timestamp
@@ -1695,38 +1748,38 @@ group Types
       type record X_AUT
       {
         FieldName            fieldName (X_AUT_E),
-        charstring           x_AUT_Value             
+        charstring           x_AUT_Value
       }
-      
-      // [531/0363-FCP 101 5091]      
+
+      // [531/0363-FCP 101 5091]
       type record X_Carrier_Info
       {
         FieldName            fieldName (X_CARRIER_INFO_E),
-        charstring           x_Carrier_Info_Value             
+        charstring           x_Carrier_Info_Value
       }
-      
-      // [531/0363-FCP 101 5091]      
+
+      // [531/0363-FCP 101 5091]
       type record X_CHGDelay
       {
         FieldName            fieldName (X_CHGDELAY_E),
-        charstring           x_CHGDelay_Value             
-      }   
+        charstring           x_CHGDelay_Value
+      }
 
-      // [531/0363-FCP 101 5091]         
+      // [531/0363-FCP 101 5091]
       type record X_CHGInfo
       {
         FieldName           fieldName (X_CHGINFO_E),
         charstring          x_ci_kind_data,
         charstring          cDR_Record optional
       }
-	  
-	  //KDDI specific SIP header(ISUP Forward Call Indicator)
+
+      //KDDI specific SIP header(ISUP Forward Call Indicator)
       type record X_FCI
       {
         FieldName           fieldName (X_FCI_E),
         hexstring           x_FCI_Value
       }
-              
+
     } // end group HeaderFieldTypes
 
     group MessageHeaderTypes
@@ -1755,32 +1808,37 @@ group Types
         ContentLanguage         contentLanguage optional,
         ContentLength           contentLength optional,
         ContentType             contentType optional,
+        Conversation_ID         conversation_ID optional,
+        Contribution_ID         contribution_ID optional,
         CSeq                    cSeq optional,
         Date                    date optional,
         Diversion               diversion optional,
         ErrorInfo               errorInfo optional,
         Event                   event optional,
         Expires                 expires optional,
-	Feature_Caps            feature_caps optional,
+        Feature_Caps            feature_caps optional,
         From                    fromField optional,
         Geolocation             geolocation optional,
         Geolocation_routing     geolocation_routing optional,
         Geolocation_error       geolocation_error optional,
         HistoryInfo             historyInfo optional,
-	Info_Package            info_Package optional,
+        Info_Package            info_Package optional,
         InReplyTo               inReplyTo optional,
+        InReplyTo_contribution_ID inReplyTo_contribution_ID optional,
         Join                    join optional,
         MaxForwards             maxForwards optional,
+        Message_Expires         message_Expires optional,
+        Message_UID             message_UID optional,
         MimeVersion             mimeVersion optional,
-        MinExpires              minExpires optional, 
+        MinExpires              minExpires optional,
         Min_SE                  min_SE optional,
         Organization            organization optional,
         P_Access_Network_Info   p_access_network_info optional,
         P_Alerting_Mode         p_alerting_mode optional,
         P_Answer_State          p_answer_state optional,
-	P_Area_Info             p_Area_Info optional,
+        P_Area_Info             p_Area_Info optional,
         P_Asserted_Identity     passertedID optional,
-	P_Asserted_Service      p_asserted_service optional,
+        P_Asserted_Service      p_asserted_service optional,
         P_Associated_Uri        p_associated_uri optional,
         P_Called_Party_ID       p_called_party_id optional,
         P_Charging_Function_Address p_charging_function_address optional,
@@ -1794,11 +1852,11 @@ group Types
         P_Last_Access_Network_Info   p_last_access_network_info optional,
         P_Media_Auth            p_media_auth optional,
         P_Preferred_Identity    ppreferredID optional,
-	P_Preferred_Service     p_preferred_service optional,
+        P_Preferred_Service     p_preferred_service optional,
         P_Profile_Key           p_profile_key optional,
         P_Served_User           p_served_user optional,
-	P_Service_Indication    p_Service_Indication optional,
-	P_Service_Notification  p_Service_Notification optional,
+        P_Service_Indication    p_Service_Indication optional,
+        P_Service_Notification  p_Service_Notification optional,
         P_User_Database         p_user_database optional,
         P_Visited_Network_ID    p_visited_network_id optional,
         Path                    path optional,
@@ -1808,11 +1866,11 @@ group Types
         ProxyAuthenticate       proxyAuthenticate optional,
         ProxyAuthorization      proxyAuthorization optional,
         ProxyRequire            proxyRequire optional,
-        RAck                    rack optional, 
+        RAck                    rack optional,
         RSeq                    rseq optional,
         Reason                  reason optional,
         RecordRoute             recordRoute optional,
-	Recv_Info               recv_Info optional,
+        Recv_Info               recv_Info optional,
         Reject_contact          reject_contact optional,
         Refer_Sub               refer_sub optional,
         Refer_to                refer_to optional,
@@ -1829,6 +1887,7 @@ group Types
         Security_verify         security_verify optional,
         Session_expires         session_expires optional,
         Session_ID              session_id optional,
+        Session_Replaces        session_Replaces optional,
         Server                  server optional,
         Service_route           service_route optional,
         SIP_ETag                sip_ETag optional,
@@ -1836,7 +1895,7 @@ group Types
         Subject                 subject optional,
         Subscription_state      subscription_state optional,
         Supported               supported optional,
-	Target_Dialog           target_dialog optional,
+        Target_Dialog           target_dialog optional,
         Timestamp               timestamp optional,
         To                      toField optional,
         Unsupported             unsupported optional,
@@ -1844,9 +1903,9 @@ group Types
         Via                     via optional,
         Warning                 warning optional,
         WwwAuthenticate         wwwAuthenticate optional,
-	X_AUT                   x_AUT optional,
-	X_Carrier_Info          x_Carrier_Info optional,
-	X_CHGDelay              x_CHGDelay optional,
+        X_AUT                   x_AUT optional,
+        X_Carrier_Info          x_Carrier_Info optional,
+        X_CHGDelay              x_CHGDelay optional,
         X_CHGInfo               x_CHGInfo optional,
         X_FCI                   x_FCI optional,
         UndefinedHeader_List    undefinedHeader_List optional
@@ -1878,7 +1937,7 @@ group Types
       type union FirstLine
       {
         RequestLine             requestLine,
-        StatusLine              statusLine    
+        StatusLine              statusLine
       }
 
   }// end group Subtypes
@@ -1908,7 +1967,7 @@ group Types
       FirstLine                 firstLine optional,
       MessageHeader             msgHeader optional,
       charstring                messageBody optional,
-      Payload                   payload     optional    
+      Payload                   payload     optional
     }
 
     type record ASP_SIP_Request
@@ -1928,7 +1987,7 @@ group Types
       SIP_comm_adress           addr optional,
       PDU_SIP_Raw               raw
     }
-        
+
     type record ASP_SIP_open
     {
       SIP_comm_adress           addr
@@ -1938,14 +1997,14 @@ group Types
     {
       SIP_comm_adress           addr
     }
-    
+
     type union PDU_SIP
     {
       PDU_SIP_Request           request,
       PDU_SIP_Response          response,
       PDU_SIP_Raw               raw
     }
-    
+
     type record ASP_SIP_error
     {
       integer                   error_code,
@@ -1956,5 +2015,5 @@ group Types
     }
   }// end group MSGTypes
 }// end group Types
-}with {extension "version R15A"}
+}with {extension "version R17B"}
 
